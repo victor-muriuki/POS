@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Container, Card, Row, Col, Spinner, Alert, Form } from 'react-bootstrap';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -9,7 +10,7 @@ export default function Transactions() {
   useEffect(() => {
     let url = 'http://localhost:5000/transactions';
     if (filterDate) {
-      url += `?date=${filterDate}`;  // Backend should handle this query param
+      url += `?date=${filterDate}`;
     }
     setLoading(true);
     fetch(url)
@@ -28,29 +29,47 @@ export default function Transactions() {
   }, [filterDate]);
 
   return (
-    <div>
-      <h2>Transactions</h2>
-      <label>
-        Filter by Date:{' '}
-        <input
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">Transactions</h2>
+
+      <Form.Group className="mb-4">
+        <Form.Label>Filter by Date</Form.Label>
+        <Form.Control
           type="date"
           value={filterDate}
           onChange={e => setFilterDate(e.target.value)}
         />
-      </label>
+      </Form.Group>
 
-      {loading && <p>Loading transactions...</p>}
-      {error && <p>Error: {error}</p>}
+      {loading && (
+        <div className="text-center">
+          <Spinner animation="border" role="status" />
+          <p>Loading transactions...</p>
+        </div>
+      )}
 
-      {!loading && transactions.length === 0 && <p>No transactions found.</p>}
+      {error && <Alert variant="danger">Error: {error}</Alert>}
 
-      <ul>
+      {!loading && transactions.length === 0 && (
+        <Alert variant="info">No transactions found.</Alert>
+      )}
+
+      <Row>
         {transactions.map(tx => (
-          <li key={tx.id}>
-            Item: {tx.item_name || 'Unknown'} | Quantity Sold: {tx.quantity_sold} | Total Price: ${tx.total_price.toFixed(2)} | Date: {new Date(tx.date).toLocaleString()}
-          </li>
+          <Col key={tx.id} md={6} lg={4} className="mb-4">
+            <Card className="h-100 shadow-sm">
+              <Card.Body>
+                <Card.Title>{tx.item_name || 'Unknown Item'}</Card.Title>
+                <Card.Text>
+                  <strong>Quantity Sold:</strong> {tx.quantity_sold}<br />
+                  <strong>Total Price:</strong> Ksh {tx.total_price.toFixed(2)}<br />
+                  <strong>Date:</strong> {new Date(tx.date).toLocaleString()}
+                </Card.Text>
+              </Card.Body>
+            </Card>
+          </Col>
         ))}
-      </ul>
-    </div>
+      </Row>
+    </Container>
   );
 }

@@ -29,6 +29,7 @@ class UserLogin(Resource):
         user = User.query.filter_by(username=data['username']).first()
         if user and bcrypt.check_password_hash(user.password_hash, data['password']):
             access_token = create_access_token(identity=user.id)
-            return {"access_token": access_token}, 200
+            return {"access_token": access_token,
+            "username": user.username }, 200
         
         return {"message": "Invalid credentials"}, 401

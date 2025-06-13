@@ -22,6 +22,7 @@ function Login({ setIsLoggedIn }) {
     try {
       const res = await api.post('/login', { username, password });
       localStorage.setItem('token', res.data.access_token);
+      localStorage.setItem('username', res.data.username);
       setIsLoggedIn(true);
       setMessage('Login successful!');
 
