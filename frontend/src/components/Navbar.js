@@ -41,6 +41,9 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
                   <Link className="nav-link" to="/transactions">Transactions</Link>
                 </li>
                 <li className="nav-item">
+                  <Link className="nav-link" to="/inventory-form">Add Item</Link>
+                </li>
+                <li className="nav-item">
                   <button className="btn btn-outline-danger ms-3" onClick={handleLogout}>
                     Logout
                   </button>

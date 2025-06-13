@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
 const InventoryForm = ({ existingItem, onSuccess }) => {
-  // If existingItem passed, we’re editing, else adding new
   const [formData, setFormData] = useState({
     name: '',
     quantity: '',
@@ -10,13 +9,15 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
     supplier: ''
   });
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (existingItem) {
       setFormData({
-        name: existingItem.name,
-        quantity: existingItem.quantity,
-        buying_price: existingItem.buying_price,
-        selling_price: existingItem.selling_price,
+        name: existingItem.name || '',
+        quantity: existingItem.quantity || '',
+        buying_price: existingItem.buying_price || '',
+        selling_price: existingItem.selling_price || '',
         supplier: existingItem.supplier || ''
       });
     }
@@ -30,19 +31,19 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate inputs if you want (optional)
     if (!formData.name || !formData.quantity || !formData.buying_price || !formData.selling_price) {
       alert('Please fill in all required fields.');
       return;
     }
 
-    // Prepare payload
     const payload = {
       ...formData,
       quantity: Number(formData.quantity),
       buying_price: Number(formData.buying_price),
       selling_price: Number(formData.selling_price),
     };
+
+    setLoading(true);
 
     try {
       const method = existingItem ? 'PUT' : 'POST';
@@ -54,6 +55,8 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
         body: JSON.stringify(payload),
       });
 
+      setLoading(false);
+
       if (!response.ok) {
         const errorData = await response.json();
         alert(`Error: ${errorData.message || response.statusText}`);
@@ -62,8 +65,8 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
 
       alert(`Item ${existingItem ? 'updated' : 'added'} successfully!`);
       if (onSuccess) onSuccess();
+
       if (!existingItem) {
-        // Reset form after adding new item
         setFormData({
           name: '',
           quantity: '',
@@ -72,23 +75,34 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
           supplier: ''
         });
       }
+
     } catch (error) {
+      setLoading(false);
       alert('Network error: ' + error.message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: 'auto' }}>
-      <h3>{existingItem ? 'Update Item' : 'Add New Item'}</h3>
+    <form onSubmit={handleSubmit} className="container mt-4" style={{ maxWidth: '500px' }}>
+      <h3 className="mb-4 text-center">{existingItem ? 'Update Item' : 'Add New Item'}</h3>
 
-      <label>
-        Name*:
-        <input name="name" value={formData.name} onChange={handleChange} required />
-      </label>
-
-      <label>
-        Quantity*:
+      <div className="mb-3">
+        <label className="form-label" htmlFor="name">Name*</label>
         <input
+          id="name"
+          className="form-control"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label" htmlFor="quantity">Quantity*</label>
+        <input
+          id="quantity"
+          className="form-control"
           name="quantity"
           type="number"
           min="0"
@@ -96,11 +110,13 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
           onChange={handleChange}
           required
         />
-      </label>
+      </div>
 
-      <label>
-        Buying Price*:
+      <div className="mb-3">
+        <label className="form-label" htmlFor="buying_price">Buying Price*</label>
         <input
+          id="buying_price"
+          className="form-control"
           name="buying_price"
           type="number"
           min="0"
@@ -109,11 +125,13 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
           onChange={handleChange}
           required
         />
-      </label>
+      </div>
 
-      <label>
-        Selling Price*:
+      <div className="mb-3">
+        <label className="form-label" htmlFor="selling_price">Selling Price*</label>
         <input
+          id="selling_price"
+          className="form-control"
           name="selling_price"
           type="number"
           min="0"
@@ -122,14 +140,26 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
           onChange={handleChange}
           required
         />
-      </label>
+      </div>
 
-      <label>
-        Supplier:
-        <input name="supplier" value={formData.supplier} onChange={handleChange} />
-      </label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="supplier">Supplier</label>
+        <input
+          id="supplier"
+          className="form-control"
+          name="supplier"
+          value={formData.supplier}
+          onChange={handleChange}
+        />
+      </div>
 
-      <button type="submit">{existingItem ? 'Update' : 'Add'} Item</button>
+      <button
+        type="submit"
+        className="btn btn-primary w-100"
+        disabled={loading}
+      >
+        {loading ? 'Saving...' : existingItem ? 'Update Item' : 'Add Item'}
+      </button>
     </form>
   );
 };
