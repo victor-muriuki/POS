@@ -18,6 +18,9 @@ class Item(db.Model):
     buying_price = db.Column(db.Float, nullable=False)
     selling_price = db.Column(db.Float, nullable=False)
     supplier = db.Column(db.String(120))
+    barcode = db.Column(db.String(64), unique=True, nullable=True)  # Unique barcode for the item
+   
+
 
     def __repr__(self):
         return f"<Item {self.name}>"
