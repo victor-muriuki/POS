@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'react-toastify';
 
-const InventoryForm = ({ existingItem, onSuccess }) => {
+const InventoryForm = () => {
+  const [items, setItems] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     quantity: '',
@@ -8,33 +10,114 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
     selling_price: '',
     supplier: ''
   });
-
+  const [editingItem, setEditingItem] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  useEffect(() => {
-    if (existingItem) {
-      setFormData({
-        name: existingItem.name || '',
-        quantity: existingItem.quantity || '',
-        buying_price: existingItem.buying_price || '',
-        selling_price: existingItem.selling_price || '',
-        supplier: existingItem.supplier || ''
+  const showToast = (message, isError = false) => {
+    if (isError) {
+      toast.error(message, {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    } else {
+      toast.success(message, {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
     }
-  }, [existingItem]);
+  };
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/items');
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      setItems(data);
+    } catch (err) {
+      showToast('Error loading items: ' + err.message, true);
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        name: editingItem.name || '',
+        quantity: editingItem.quantity || '',
+        buying_price: editingItem.buying_price || '',
+        selling_price: editingItem.selling_price || '',
+        supplier: editingItem.supplier || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        quantity: '',
+        buying_price: '',
+        selling_price: '',
+        supplier: ''
+      });
+    }
+  }, [editingItem]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.supplier?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [items, searchTerm]);
+
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const currentItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredItems.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredItems, currentPage, itemsPerPage]);
+
+  const validateForm = () => {
+    if (Number(formData.selling_price) <= Number(formData.buying_price)) {
+      showToast('Selling price must be greater than buying price', true);
+      return false;
+    }
+    if (Number(formData.quantity) < 0) {
+      showToast('Quantity cannot be negative', true);
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name || !formData.quantity || !formData.buying_price || !formData.selling_price) {
-      alert('Please fill in all required fields.');
-      return;
-    }
+    if (!validateForm()) return;
 
     const payload = {
       ...formData,
@@ -46,8 +129,8 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
     setLoading(true);
 
     try {
-      const method = existingItem ? 'PUT' : 'POST';
-      const url = existingItem ? `/items/${existingItem.id}` : '/items';
+      const method = editingItem ? 'PUT' : 'POST';
+      const url = editingItem ? `/items/${editingItem.id}` : '/items';
 
       const response = await fetch(url, {
         method,
@@ -55,112 +138,284 @@ const InventoryForm = ({ existingItem, onSuccess }) => {
         body: JSON.stringify(payload),
       });
 
-      setLoading(false);
-
       if (!response.ok) {
         const errorData = await response.json();
-        alert(`Error: ${errorData.message || response.statusText}`);
-        return;
+        throw new Error(errorData.message || response.statusText);
       }
 
-      alert(`Item ${existingItem ? 'updated' : 'added'} successfully!`);
-      if (onSuccess) onSuccess();
-
-      if (!existingItem) {
-        setFormData({
-          name: '',
-          quantity: '',
-          buying_price: '',
-          selling_price: '',
-          supplier: ''
-        });
-      }
-
+      showToast(`Item ${editingItem ? 'updated' : 'added'} successfully!`);
+      setEditingItem(null);
+      setFormData({
+        name: '',
+        quantity: '',
+        buying_price: '',
+        selling_price: '',
+        supplier: ''
+      });
+      fetchItems();
+      setShowModal(false);
     } catch (error) {
+      showToast('Error: ' + error.message, true);
+    } finally {
       setLoading(false);
-      alert('Network error: ' + error.message);
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    
+    try {
+      const response = await fetch(`/items/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete');
+      showToast('Item deleted successfully');
+      fetchItems();
+      if (currentItems.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    } catch (error) {
+      showToast('Error deleting item: ' + error.message, true);
+    }
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setShowModal(true);
+  };
+
+  const handleAdd = () => {
+    setEditingItem(null);
+    setShowModal(true);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES'
+    }).format(amount);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="container mt-4" style={{ maxWidth: '500px' }}>
-      <h3 className="mb-4 text-center">{existingItem ? 'Update Item' : 'Add New Item'}</h3>
+    <div className="container mt-4">
+      <h2 className="text-center mb-4">Inventory Management</h2>
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="name">Name*</label>
-        <input
-          id="name"
-          className="form-control"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <div className="input-group">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+            <button className="btn btn-outline-secondary" type="button">
+              <i className="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+        <div className="col-md-6 text-end">
+          <button className="btn btn-primary" onClick={handleAdd}>
+            <i className="bi bi-plus-circle"></i> Add Item
+          </button>
+        </div>
       </div>
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="quantity">Quantity*</label>
-        <input
-          id="quantity"
-          className="form-control"
-          name="quantity"
-          type="number"
-          min="0"
-          value={formData.quantity}
-          onChange={handleChange}
-          required
-        />
-      </div>
+      {loading && items.length === 0 ? (
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="alert alert-info text-center">
+          {searchTerm ? 'No items match your search.' : 'No items in inventory.'}
+        </div>
+      ) : (
+        <>
+          <div className="table-responsive">
+            <table className="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Quantity</th>
+                  <th>Buying Price</th>
+                  <th>Selling Price</th>
+                  <th>Supplier</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>{item.quantity}</td>
+                    <td>{formatCurrency(item.buying_price)}</td>
+                    <td>{formatCurrency(item.selling_price)}</td>
+                    <td>{item.supplier || '-'}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => handleEdit(item)}
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="buying_price">Buying Price*</label>
-        <input
-          id="buying_price"
-          className="form-control"
-          name="buying_price"
-          type="number"
-          min="0"
-          step="0.01"
-          value={formData.buying_price}
-          onChange={handleChange}
-          required
-        />
-      </div>
+          {totalPages > 1 && (
+            <nav className="mt-4">
+              <ul className="pagination justify-content-center">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button 
+                    className="page-link" 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  >
+                    Previous
+                  </button>
+                </li>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                    <button 
+                      className="page-link" 
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  </li>
+                ))}
+                
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                  <button 
+                    className="page-link" 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+        </>
+      )}
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="selling_price">Selling Price*</label>
-        <input
-          id="selling_price"
-          className="form-control"
-          name="selling_price"
-          type="number"
-          min="0"
-          step="0.01"
-          value={formData.selling_price}
-          onChange={handleChange}
-          required
-        />
-      </div>
+      {/* Modal */}
+      {showModal && (
+        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog" role="document">
+            <div className="modal-content">
+              <form onSubmit={handleSubmit}>
+                <div className="modal-header">
+                  <h5 className="modal-title">{editingItem ? 'Update Item' : 'Add New Item'}</h5>
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => setShowModal(false)}
+                    disabled={loading}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">Name*</label>
+                    <input
+                      className="form-control"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="supplier">Supplier</label>
-        <input
-          id="supplier"
-          className="form-control"
-          name="supplier"
-          value={formData.supplier}
-          onChange={handleChange}
-        />
-      </div>
+                  <div className="mb-3">
+                    <label className="form-label">Quantity*</label>
+                    <input
+                      className="form-control"
+                      name="quantity"
+                      type="number"
+                      min="0"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
 
-      <button
-        type="submit"
-        className="btn btn-primary w-100"
-        disabled={loading}
-      >
-        {loading ? 'Saving...' : existingItem ? 'Update Item' : 'Add Item'}
-      </button>
-    </form>
+                  <div className="mb-3">
+                    <label className="form-label">Buying Price*</label>
+                    <input
+                      className="form-control"
+                      name="buying_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.buying_price}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Selling Price*</label>
+                    <input
+                      className="form-control"
+                      name="selling_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.selling_price}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Supplier</label>
+                    <input
+                      className="form-control"
+                      name="supplier"
+                      value={formData.supplier}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {editingItem ? 'Updating...' : 'Adding...'}
+                      </>
+                    ) : editingItem ? 'Update Item' : 'Add Item'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowModal(false)}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

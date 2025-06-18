@@ -32,7 +32,8 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
                   <span className="nav-link text-primary">Welcome, {username}!</span>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/items">Items</Link>
+                  <Link className="nav-link" to="/inventory">Inventory</Link>
+
                 </li>
                 <li className="nav-item">
                   <Link className="nav-link" to="/sell">Sell</Link>

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import InventoryForm from './components/InventoryForm';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
+import InventoryForm from './components/InventoryForm';
 import Navbar from './components/Navbar';
 import SellForm from './components/SellForm';
 import Transactions from './components/Transactions';
@@ -9,8 +13,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ItemsList from './pages/ItemsList';
-
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -20,11 +22,11 @@ function App() {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
 
-    // Periodically check for token changes (logout in another tab, etc.)
+    // Periodically check for token changes
     const interval = setInterval(() => {
       const currentToken = localStorage.getItem('token');
       setIsLoggedIn(!!currentToken);
-    }, 3000); // Check every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
@@ -32,7 +34,7 @@ function App() {
   return (
     <Router>
       <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
-
+      
       <div className="container mt-3">
         <Routes>
           <Route path="/" element={<ItemsList />} />
@@ -65,19 +67,33 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-  path="/inventory-form"
-  element={
-    <ProtectedRoute isLoggedIn={isLoggedIn}>
-      <InventoryForm />
-    </ProtectedRoute>
-  }
-/>
 
+          <Route
+            path="/inventory-form"
+            element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <InventoryForm />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="*" element={<h2 className="text-center mt-5">Page not found</h2>} />
         </Routes>
       </div>
+
+      {/* Toast Container - should be at root level */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </Router>
   );
 }

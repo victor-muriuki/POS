@@ -1,3 +1,4 @@
+# __init__.py
 from flask import Flask
 from flask_restful import Api
 from .extensions import db, migrate, bcrypt, jwt
