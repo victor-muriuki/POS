@@ -9,6 +9,7 @@ from app.resources.item import ItemByBarcode
 from .resources.user import UserRegister, UserLogin
 from .resources.item import ItemResource, ItemList
 from .resources.transaction import TransactionResource, TransactionList
+from .resources.supplier import SupplierList 
 
 
 def create_app():
@@ -37,5 +38,6 @@ def create_app():
     # Transaction endpoints
     api.add_resource(TransactionList, '/transactions')
     api.add_resource(TransactionResource, '/transactions/<int:tx_id>')
-
+    # Supplier endpoints
+    api.add_resource(SupplierList, '/suppliers')
     return app
