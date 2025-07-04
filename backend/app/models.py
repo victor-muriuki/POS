@@ -21,6 +21,14 @@ class Supplier(db.Model):
     def __repr__(self):
         return f"<Supplier {self.name}>"
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'contact': self.contact,
+            'email': self.email
+        }
+
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,6 +42,17 @@ class Item(db.Model):
 
     def __repr__(self):
         return f"<Item {self.name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'quantity': self.quantity,
+            'buying_price': self.buying_price,
+            'selling_price': self.selling_price,
+            'barcode': self.barcode,
+            'supplier': self.supplier.to_dict() if self.supplier else None
+        }
 
 
 class Transaction(db.Model):

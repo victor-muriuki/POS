@@ -18,39 +18,31 @@ const InventoryForm = () => {
   const itemsPerPage = 5;
 
   const showToast = (message, isError = false) => {
-    if (isError) {
-      toast.error(message, {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-    } else {
-      toast.success(message, {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-    }
+    const toastFn = isError ? toast.error : toast.success;
+    toastFn(message, {
+      position: 'bottom-right',
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/items');
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/items', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setItems(data);
     } catch (err) {
       showToast('Error loading items: ' + err.message, true);
-      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -67,7 +59,7 @@ const InventoryForm = () => {
         quantity: editingItem.quantity || '',
         buying_price: editingItem.buying_price || '',
         selling_price: editingItem.selling_price || '',
-        supplier: editingItem.supplier || ''
+        supplier: editingItem.supplier?.name || ''  // ✅ Only use supplier name
       });
     } else {
       setFormData({
@@ -93,7 +85,7 @@ const InventoryForm = () => {
   const filteredItems = useMemo(() => {
     return items.filter(item =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.supplier?.toLowerCase().includes(searchTerm.toLowerCase())
+      item.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [items, searchTerm]);
 
@@ -101,7 +93,7 @@ const InventoryForm = () => {
   const currentItems = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredItems.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredItems, currentPage, itemsPerPage]);
+  }, [filteredItems, currentPage]);
 
   const validateForm = () => {
     if (Number(formData.selling_price) <= Number(formData.buying_price)) {
@@ -163,7 +155,7 @@ const InventoryForm = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
-    
+
     try {
       const response = await fetch(`/items/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete');
@@ -208,9 +200,6 @@ const InventoryForm = () => {
               value={searchTerm}
               onChange={handleSearchChange}
             />
-            <button className="btn btn-outline-secondary" type="button">
-              <i className="bi bi-search"></i>
-            </button>
           </div>
         </div>
         <div className="col-md-6 text-end">
@@ -251,7 +240,7 @@ const InventoryForm = () => {
                     <td>{item.quantity}</td>
                     <td>{formatCurrency(item.buying_price)}</td>
                     <td>{formatCurrency(item.selling_price)}</td>
-                    <td>{item.supplier || '-'}</td>
+                    <td>{item.supplier?.name || '-'}</td>
                     <td>
                       <button 
                         className="btn btn-sm btn-outline-primary me-2"
@@ -276,30 +265,19 @@ const InventoryForm = () => {
             <nav className="mt-4">
               <ul className="pagination justify-content-center">
                 <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                  <button 
-                    className="page-link" 
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  >
+                  <button className="page-link" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
                     Previous
                   </button>
                 </li>
-                
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                   <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                    <button 
-                      className="page-link" 
-                      onClick={() => setCurrentPage(page)}
-                    >
+                    <button className="page-link" onClick={() => setCurrentPage(page)}>
                       {page}
                     </button>
                   </li>
                 ))}
-                
                 <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                  <button 
-                    className="page-link" 
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  >
+                  <button className="page-link" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
                     Next
                   </button>
                 </li>
@@ -311,86 +289,33 @@ const InventoryForm = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog" role="document">
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
             <div className="modal-content">
               <form onSubmit={handleSubmit}>
                 <div className="modal-header">
                   <h5 className="modal-title">{editingItem ? 'Update Item' : 'Add New Item'}</h5>
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setShowModal(false)}
-                    disabled={loading}
-                  ></button>
+                  <button type="button" className="btn-close" onClick={() => setShowModal(false)} disabled={loading}></button>
                 </div>
                 <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Name*</label>
-                    <input
-                      className="form-control"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Quantity*</label>
-                    <input
-                      className="form-control"
-                      name="quantity"
-                      type="number"
-                      min="0"
-                      value={formData.quantity}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Buying Price*</label>
-                    <input
-                      className="form-control"
-                      name="buying_price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.buying_price}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Selling Price*</label>
-                    <input
-                      className="form-control"
-                      name="selling_price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.selling_price}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Supplier</label>
-                    <input
-                      className="form-control"
-                      name="supplier"
-                      value={formData.supplier}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </div>
+                  {['name', 'quantity', 'buying_price', 'selling_price', 'supplier'].map(field => (
+                    <div className="mb-3" key={field}>
+                      <label className="form-label">
+                        {field.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')}
+                      </label>
+                      <input
+                        className="form-control"
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleChange}
+                        type={field.includes('price') || field === 'quantity' ? 'number' : 'text'}
+                        required={['name', 'quantity', 'buying_price', 'selling_price'].includes(field)}
+                        min={field === 'quantity' || field.includes('price') ? '0' : undefined}
+                        step={field.includes('price') ? '0.01' : undefined}
+                        disabled={loading}
+                      />
+                    </div>
+                  ))}
                 </div>
                 <div className="modal-footer">
                   <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -401,12 +326,7 @@ const InventoryForm = () => {
                       </>
                     ) : editingItem ? 'Update Item' : 'Add Item'}
                   </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    onClick={() => setShowModal(false)}
-                    disabled={loading}
-                  >
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={loading}>
                     Cancel
                   </button>
                 </div>

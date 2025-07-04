@@ -7,7 +7,15 @@ function ItemCard({ item }) {
         <h5 className="card-title">{item.name}</h5>
         <p className="card-text">Quantity: {item.quantity}</p>
         <p className="card-text">Selling Price: ${item.selling_price.toFixed(2)}</p>
-        <p className="card-text">Supplier: {item.supplier}</p>
+        {item.supplier ? (
+          <p className="card-text">
+            Supplier: {item.supplier.name} <br />
+            Contact: {item.supplier.contact || 'N/A'} <br />
+            Email: {item.supplier.email || 'N/A'}
+          </p>
+        ) : (
+          <p className="text-muted">No supplier info</p>
+        )}
       </div>
     </div>
   );
