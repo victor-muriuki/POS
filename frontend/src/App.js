@@ -13,16 +13,15 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ItemsList from './pages/ItemsList';
+import Home from './pages/Home'; // <-- New Home page
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check token on mount
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
 
-    // Periodically check for token changes
     const interval = setInterval(() => {
       const currentToken = localStorage.getItem('token');
       setIsLoggedIn(!!currentToken);
@@ -37,7 +36,7 @@ function App() {
       
       <div className="container mt-3">
         <Routes>
-          <Route path="/" element={<ItemsList />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
           <Route path="/register" element={<Register />} />
 
@@ -49,7 +48,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/sell"
             element={
@@ -58,7 +56,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/transactions"
             element={
@@ -67,7 +64,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/inventory-form"
             element={
@@ -81,7 +77,6 @@ function App() {
         </Routes>
       </div>
 
-      {/* Toast Container - should be at root level */}
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -99,3 +94,4 @@ function App() {
 }
 
 export default App;
+// This is the main App component that sets up the router and routes for the application.

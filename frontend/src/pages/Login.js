@@ -6,7 +6,7 @@ function Login({ setIsLoggedIn }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,12 +21,16 @@ function Login({ setIsLoggedIn }) {
     e.preventDefault();
     try {
       const res = await api.post('/login', { username, password });
+
+      // Store token, username, and role in localStorage
       localStorage.setItem('token', res.data.access_token);
       localStorage.setItem('username', res.data.username);
+      localStorage.setItem('role', res.data.role); // ✅ Store role
+
       setIsLoggedIn(true);
       setMessage('Login successful!');
 
-      // Redirect to the page user originally wanted, or homepage
+      // Redirect to the originally intended page or homepage
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
 

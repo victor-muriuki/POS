@@ -1,4 +1,3 @@
-# models.py
 from .extensions import db
 from datetime import datetime
 
@@ -6,10 +5,21 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), default='user')  # 'user' or 'admin'
 
     def __repr__(self):
-        return f"<User {self.username}>"
+        return f"<User {self.username} - Role: {self.role}>"
+
+
+class Supplier(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    contact = db.Column(db.String(120), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    items = db.relationship('Item', backref='supplier', lazy=True)
+
+    def __repr__(self):
+        return f"<Supplier {self.name}>"
 
 
 class Item(db.Model):
@@ -18,10 +28,9 @@ class Item(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     buying_price = db.Column(db.Float, nullable=False)
     selling_price = db.Column(db.Float, nullable=False)
-    supplier = db.Column(db.String(120))
-    barcode = db.Column(db.String(64), unique=True, nullable=True)  # Unique barcode for the item
-   
+    barcode = db.Column(db.String(64), unique=True, nullable=True)
 
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
 
     def __repr__(self):
         return f"<Item {self.name}>"
