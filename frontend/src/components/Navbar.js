@@ -58,11 +58,16 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
                   <Link className="nav-link" to="/transactions">Transactions</Link>
                 </li>
 
-                {/* ✅ Show only if admin */}
+                {/* ✅ Admin-only links */}
                 {role === 'admin' && (
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/inventory-form">Inventory Management</Link>
-                  </li>
+                  <>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/inventory-form">Inventory Management</Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/quotation">Generate Quotation</Link>
+                    </li>
+                  </>
                 )}
 
                 <li className="nav-item">

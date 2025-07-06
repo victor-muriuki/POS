@@ -13,7 +13,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ItemsList from './pages/ItemsList';
-import Home from './pages/Home'; // <-- New Home page
+import Home from './pages/Home';
+import QuotationForm from './components/QuotationForm'; // ✅ Import Quotation component
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -33,7 +34,7 @@ function App() {
   return (
     <Router>
       <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
-      
+
       <div className="container mt-3">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -73,6 +74,16 @@ function App() {
             }
           />
 
+          {/* ✅ Add quotation route */}
+          <Route
+            path="/quotation"
+            element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <QuotationForm />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<h2 className="text-center mt-5">Page not found</h2>} />
         </Routes>
       </div>
@@ -94,4 +105,3 @@ function App() {
 }
 
 export default App;
-// This is the main App component that sets up the router and routes for the application.
