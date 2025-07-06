@@ -16,7 +16,7 @@ def send_quotation():
 
     try:
         msg = Message("Quotation Document",
-                      sender="your@gmail.com",  # set via MAIL_USERNAME
+                      sender="muriuki.victor@gmail.com",  # set via MAIL_USERNAME
                       recipients=[recipient])
         msg.body = "Attached is the quotation you requested."
 
