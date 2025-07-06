@@ -1,0 +1,4 @@
+echo "Flask-Mail" >> requirements.txt
+echo "Flask-Bcrypt" >> requirements.txt
+echo "Flask-JWT-Extended" >> requirements.txt
+echo "Flask-Migrate" >> requirements.txt
