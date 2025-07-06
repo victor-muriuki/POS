@@ -1,36 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Modal, Button, Form, Toast, ToastContainer } from 'react-bootstrap';
+import { Button, Form, Toast, ToastContainer, Table } from 'react-bootstrap';
 import Select from 'react-select';
 
 const SellForm = () => {
   const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
   const [message, setMessage] = useState('');
   const [barcode, setBarcode] = useState('');
-  const [show, setShow] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [receiptData, setReceiptData] = useState(null);
+  const [receiptData, setReceiptData] = useState([]);
 
   const receiptRef = useRef();
 
-  // Fetch items from backend on component mount
   useEffect(() => {
     axios.get('http://localhost:5000/items')
       .then(res => setItems(res.data))
       .catch(err => console.error(err));
   }, []);
 
-  // Prepare dropdown options
   const itemOptions = items.map(item => ({
     value: item.id,
     label: `${item.name} (Stock: ${item.quantity})`,
     raw: item
   }));
 
-  // Barcode scan logic
   const handleBarcodeChange = async (e) => {
     const code = e.target.value;
     setBarcode(code);
@@ -39,147 +35,164 @@ const SellForm = () => {
       try {
         const res = await axios.get(`http://localhost:5000/items/barcode/${code}`);
         const item = res.data;
-        setSelectedItem({
-          value: item.id,
-          label: `${item.name} (Stock: ${item.quantity})`,
-          raw: item
-        });
-        setQuantity(1);
+        addItem(item);
         setMessage(`Selected: ${item.name}`);
       } catch (err) {
         setMessage('Item not found for barcode');
-        setSelectedItem(null);
       }
       setShowToast(true);
       setBarcode('');
     }
   };
 
-  // Handle dropdown select
-  const handleItemSelect = (option) => {
-    setSelectedItem(option);
+  const addItem = (item) => {
+    if (selectedItems.some(si => si.item.id === item.id)) return;
+    setSelectedItems(prev => [...prev, { item, quantity: 1 }]);
   };
 
-  // Sale submission
+  const handleItemSelect = (option) => {
+    setSelectedOption(option);
+    if (option && option.raw) {
+      addItem(option.raw);
+    }
+  };
+
+  const handleQuantityChange = (itemId, qty) => {
+    setSelectedItems(prev =>
+      prev.map(si => si.item.id === itemId ? { ...si, quantity: parseInt(qty) || 1 } : si)
+    );
+  };
+
+  const handleRemoveItem = (itemId) => {
+    setSelectedItems(prev => prev.filter(si => si.item.id !== itemId));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!selectedItem) {
-      setMessage('Please select an item first.');
+    if (selectedItems.length === 0) {
+      setMessage('Please select at least one item.');
       setShowToast(true);
       return;
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/transactions', {
-        item_id: selectedItem.value,
-        quantity_sold: parseInt(quantity)
-      });
+      const payload = selectedItems.map(si => ({
+        item_id: si.item.id,
+        quantity_sold: si.quantity
+      }));
 
-      setMessage(res.data.message || 'Sale successful!');
+      await Promise.all(payload.map(p => axios.post('http://localhost:5000/transactions', p)));
 
-      // Prepare receipt data
       const now = new Date();
-      const receipt = {
-        name: selectedItem.raw.name,
-        quantity,
-        price: selectedItem.raw.selling_price,
-        total: quantity * selectedItem.raw.selling_price,
+      const receipt = selectedItems.map(si => ({
+        name: si.item.name,
+        quantity: si.quantity,
+        price: si.item.selling_price,
+        total: si.quantity * si.item.selling_price,
         time: now.toLocaleString()
-      };
+      }));
+
       setReceiptData(receipt);
       setShowReceipt(true);
+      setSelectedItems([]);
+      setSelectedOption(null);
     } catch (err) {
       setMessage(err.response?.data?.message || 'An error occurred.');
     }
-
     setShowToast(true);
-    setShow(false); // Close modal
-    setBarcode('');
   };
 
-  // Print receipt and reset
   const handlePrint = () => {
     if (receiptRef.current) {
       window.print();
     }
     setTimeout(() => {
       setShowReceipt(false);
-      setReceiptData(null);
-      setSelectedItem(null);
-      setQuantity(1);
+      setReceiptData([]);
     }, 1000);
   };
 
   return (
-    <div className="text-center mt-5">
-      {/* Open Sell Modal */}
-      <Button variant="primary" onClick={() => setShow(true)}>
-        📦 Sell Item
-      </Button>
+    <div className="container my-5">
+      <h2 className="text-center mb-4">Sell Items</h2>
 
-      {/* Modal Form */}
-      <Modal show={show} onHide={() => setShow(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Sell Item</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleSubmit}>
-            {/* Barcode input */}
-            <Form.Group className="mb-3">
-              <Form.Label>Scan Barcode</Form.Label>
-              <Form.Control
-                type="text"
-                value={barcode}
-                onChange={handleBarcodeChange}
-                placeholder="Scan barcode here..."
-                autoFocus
-              />
-            </Form.Group>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Scan Barcode</Form.Label>
+          <Form.Control
+            type="text"
+            value={barcode}
+            onChange={handleBarcodeChange}
+            placeholder="Scan barcode here..."
+            autoFocus
+          />
+        </Form.Group>
 
-            {/* Manual item selection */}
-            <Form.Group className="mb-3">
-              <Form.Label>Select Item (Manual)</Form.Label>
-              <Select
-                options={itemOptions}
-                onChange={handleItemSelect}
-                value={selectedItem}
-                placeholder="Search and select item..."
-                isClearable
-              />
-            </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>Select Item (Manual)</Form.Label>
+          <Select
+            options={itemOptions}
+            onChange={handleItemSelect}
+            value={selectedOption}
+            placeholder="Search and select item..."
+            isClearable
+            isSearchable
+            filterOption={(option, inputValue) =>
+              option.label.toLowerCase().includes(inputValue.toLowerCase())
+            }
+          />
+        </Form.Group>
 
-            {/* Quantity input */}
-            <Form.Group className="mb-3">
-              <Form.Label>Quantity</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={e => setQuantity(e.target.value)}
-                required
-              />
-              {selectedItem && (
-                <Form.Text className="text-muted">
-                  Available: {selectedItem.raw.quantity}
-                </Form.Text>
-              )}
-            </Form.Group>
+        {selectedItems.length > 0 && (
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Available</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedItems.map(si => (
+                <tr key={si.item.id}>
+                  <td>{si.item.name}</td>
+                  <td>{si.item.quantity}</td>
+                  <td>{si.item.selling_price}</td>
+                  <td>
+                    <Form.Control
+                      type="number"
+                      min="1"
+                      max={si.item.quantity}
+                      value={si.quantity}
+                      onChange={e => handleQuantityChange(si.item.id, e.target.value)}
+                    />
+                  </td>
+                  <td>{(si.quantity * si.item.selling_price).toFixed(2)}</td>
+                  <td>
+                    <Button variant="outline-danger" size="sm" onClick={() => handleRemoveItem(si.item.id)}>
+                      Remove
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
 
-            {/* Confirm Sale Button */}
-            <Button
-              type="submit"
-              variant="success"
-              className="w-100"
-              disabled={!selectedItem || selectedItem.raw.quantity === 0}
-            >
-              {selectedItem?.raw.quantity === 0 ? 'Out of Stock' : 'Confirm Sale'}
-            </Button>
-          </Form>
-        </Modal.Body>
-      </Modal>
+        <Button
+          type="submit"
+          variant="success"
+          disabled={selectedItems.length === 0}
+          className="w-100"
+        >
+          Confirm Sale
+        </Button>
+      </Form>
 
-      {/* Toast Message */}
+      {/* Toast */}
       <ToastContainer position="top-center" className="p-3">
         <Toast
           show={showToast}
@@ -192,8 +205,8 @@ const SellForm = () => {
         </Toast>
       </ToastContainer>
 
-      {/* Receipt Modal Styled for Thermal Print */}
-      {showReceipt && receiptData && (
+      {/* Receipt */}
+      {showReceipt && receiptData.length > 0 && (
         <div className="mt-5 d-flex justify-content-center">
           <div
             className="receipt-print card shadow-sm p-4 text-start"
@@ -201,12 +214,14 @@ const SellForm = () => {
             ref={receiptRef}
           >
             <h5 className="mb-3 text-center">🧾 Receipt</h5>
-            <p>Item: {receiptData.name}</p>
-            <p>Qty: {receiptData.quantity}</p>
-            <p>Unit: Ksh {receiptData.price}</p>
-            <p>Total: Ksh {receiptData.total}</p>
-            <p>Time: {receiptData.time}</p>
+            {receiptData.map((r, i) => (
+              <div key={i}>
+                <p>{r.name} x{r.quantity} @ {r.price} = {r.total}</p>
+              </div>
+            ))}
             <hr />
+            <p>Total: Ksh {receiptData.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</p>
+            <p>Time: {receiptData[0]?.time}</p>
             <p className="text-center">Thank you!</p>
             <div className="text-center mt-3 no-print">
               <Button variant="outline-secondary" onClick={handlePrint}>

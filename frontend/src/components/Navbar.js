@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FaUser, FaSignOutAlt, FaSignInAlt, FaClipboardList, FaWarehouse, FaCashRegister, FaFileInvoiceDollar, FaUserPlus } from 'react-icons/fa';
 
 function Navbar({ isLoggedIn, setIsLoggedIn }) {
   const navigate = useNavigate();
@@ -24,11 +25,10 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">Bookshop</Link>
+        <Link className="navbar-brand fw-bold text-white" to="/">📚 Bookshop</Link>
 
-        {/* Toggle button for mobile view */}
         <button
           className="navbar-toggler"
           type="button"
@@ -45,44 +45,59 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
           <ul className="navbar-nav align-items-center">
             {isLoggedIn ? (
               <>
-                <li className="nav-item">
-                  <span className="nav-link text-primary">Welcome, {username}!</span>
+                <li className="nav-item me-2 text-white">
+                  <span className="nav-link active">
+                    <FaUser className="me-1" /> Welcome, {username}
+                  </span>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/items">Inventory</Link>
+                  <Link className="nav-link text-white" to="/items">
+                    <FaClipboardList className="me-1" /> Inventory
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/sell">Make Sales</Link>
+                  <Link className="nav-link text-white" to="/sell">
+                    <FaCashRegister className="me-1" /> Sales
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/transactions">Transactions</Link>
+                  <Link className="nav-link text-white" to="/transactions">
+                    <FaFileInvoiceDollar className="me-1" /> Transactions
+                  </Link>
                 </li>
 
-                {/* ✅ Admin-only links */}
                 {role === 'admin' && (
                   <>
                     <li className="nav-item">
-                      <Link className="nav-link" to="/inventory-form">Inventory Management</Link>
+                      <Link className="nav-link text-warning" to="/inventory-form">
+                        <FaWarehouse className="me-1" /> Manage Inventory
+                      </Link>
                     </li>
                     <li className="nav-item">
-                      <Link className="nav-link" to="/quotation">Generate Quotation</Link>
+                      <Link className="nav-link text-warning" to="/quotation">
+                        <FaFileInvoiceDollar className="me-1" /> Quotation
+                      </Link>
                     </li>
                   </>
                 )}
 
-                <li className="nav-item">
-                  <button className="btn btn-outline-danger ms-3" onClick={handleLogout}>
-                    Logout
+                <li className="nav-item ms-3">
+                  <button className="btn btn-sm btn-danger" onClick={handleLogout}>
+                    <FaSignOutAlt className="me-1" /> Logout
                   </button>
                 </li>
               </>
             ) : (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/login">Login</Link>
+                  <Link className="nav-link text-white" to="/login">
+                    <FaSignInAlt className="me-1" /> Login
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/register">Register</Link>
+                  <Link className="nav-link text-white" to="/register">
+                    <FaUserPlus className="me-1" /> Register
+                  </Link>
                 </li>
               </>
             )}

@@ -13,16 +13,19 @@ code {
 }
 
 @media print {
+  .no-print {
+    display: none !important;
+  }
   body * {
     visibility: hidden;
   }
-  .receipt-print {
+  .receipt-print, .receipt-print * {
     visibility: visible;
+  }
+  .receipt-print {
     position: absolute;
-    top: 0;
     left: 0;
-    width: 58mm;
-    font-size: 12px;
-    font-family: monospace;
+    top: 0;
   }
 }
+

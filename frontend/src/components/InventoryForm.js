@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
+import { FaPlusCircle, FaPen, FaTrash, FaSearch } from 'react-icons/fa';
 
 const InventoryForm = () => {
   const [items, setItems] = useState([]);
@@ -59,7 +60,7 @@ const InventoryForm = () => {
         quantity: editingItem.quantity || '',
         buying_price: editingItem.buying_price || '',
         selling_price: editingItem.selling_price || '',
-        supplier: editingItem.supplier?.name || ''  // ✅ Only use supplier name
+        supplier: editingItem.supplier?.name || ''
       });
     } else {
       setFormData({
@@ -188,104 +189,101 @@ const InventoryForm = () => {
 
   return (
     <div className="container mt-4">
-      <h2 className="text-center mb-4">Inventory Management</h2>
+      <div className="card shadow-sm p-4">
+        <h2 className="text-center mb-4 text-primary">📦 Inventory Management</h2>
 
-      <div className="row mb-3">
-        <div className="col-md-6">
-          <div className="input-group">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search items..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <div className="input-group">
+              <span className="input-group-text bg-white"><FaSearch /></span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+          </div>
+          <div className="col-md-6 text-end">
+            <button className="btn btn-success" onClick={handleAdd}>
+              <FaPlusCircle className="me-1" /> Add Item
+            </button>
           </div>
         </div>
-        <div className="col-md-6 text-end">
-          <button className="btn btn-primary" onClick={handleAdd}>
-            <i className="bi bi-plus-circle"></i> Add Item
-          </button>
-        </div>
-      </div>
 
-      {loading && items.length === 0 ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+        {loading && items.length === 0 ? (
+          <div className="text-center my-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
           </div>
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <div className="alert alert-info text-center">
-          {searchTerm ? 'No items match your search.' : 'No items in inventory.'}
-        </div>
-      ) : (
-        <>
-          <div className="table-responsive">
-            <table className="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Quantity</th>
-                  <th>Buying Price</th>
-                  <th>Selling Price</th>
-                  <th>Supplier</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.quantity}</td>
-                    <td>{formatCurrency(item.buying_price)}</td>
-                    <td>{formatCurrency(item.selling_price)}</td>
-                    <td>{item.supplier?.name || '-'}</td>
-                    <td>
-                      <button 
-                        className="btn btn-sm btn-outline-primary me-2"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </td>
+        ) : filteredItems.length === 0 ? (
+          <div className="alert alert-info text-center">
+            {searchTerm ? 'No items match your search.' : 'No items in inventory.'}
+          </div>
+        ) : (
+          <>
+            <div className="table-responsive">
+              <table className="table table-striped table-hover">
+                <thead className="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Buying Price</th>
+                    <th>Selling Price</th>
+                    <th>Supplier</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {currentItems.map(item => (
+                    <tr key={item.id}>
+                      <td>{item.name}</td>
+                      <td>{item.quantity}</td>
+                      <td>{formatCurrency(item.buying_price)}</td>
+                      <td>{formatCurrency(item.selling_price)}</td>
+                      <td>{item.supplier?.name || '-'}</td>
+                      <td>
+                        <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleEdit(item)}>
+                          <FaPen className="me-1" /> Edit
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(item.id)}>
+                          <FaTrash className="me-1" /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          {totalPages > 1 && (
-            <nav className="mt-4">
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
-                    Previous
-                  </button>
-                </li>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => setCurrentPage(page)}>
-                      {page}
+            {totalPages > 1 && (
+              <nav className="mt-4">
+                <ul className="pagination justify-content-center">
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                      Previous
                     </button>
                   </li>
-                ))}
-                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          )}
-        </>
-      )}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                      <button className="page-link" onClick={() => setCurrentPage(page)}>
+                        {page}
+                      </button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Modal */}
       {showModal && (
