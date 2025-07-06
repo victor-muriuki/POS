@@ -4,6 +4,7 @@ import autoTable from 'jspdf-autotable';
 import api from '../api/api';
 import { toast } from 'react-toastify';
 import ReactPaginate from 'react-paginate';
+import { FaFilePdf, FaPaperPlane, FaTrash, FaPlus, FaSearch } from 'react-icons/fa';
 
 function QuotationForm() {
   const [items, setItems] = useState([]);
@@ -61,10 +62,10 @@ function QuotationForm() {
     ]);
 
     autoTable(doc, {
-  head: [['#', 'Item Name', 'Quantity', 'Unit Price', 'Total']],
-  body: tableRows,
-  startY: 35,
-});
+      head: [['#', 'Item Name', 'Quantity', 'Unit Price', 'Total']],
+      body: tableRows,
+      startY: 35,
+    });
 
     const subtotal = selectedItems.reduce((sum, item) => sum + (item.quantity * item.selling_price), 0);
     const vat = subtotal * vatRate;
@@ -117,160 +118,173 @@ function QuotationForm() {
   const total = subtotal + vat - discount;
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Generate Quotation</h2>
+    <div className="container mt-5">
+      <div className="card shadow-lg">
+        <div className="card-body">
+          <h2 className="card-title text-primary mb-4">📄 Generate Quotation</h2>
 
-      <div className="row mb-3">
-        <div className="col-md-6">
-          <label className="form-label">Search Items</label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search items by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label className="form-label"><FaSearch className="me-1" /> Search Items</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search items by name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Customer Name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">VAT Rate (%)</label>
+              <input
+                type="number"
+                className="form-control"
+                value={vatRate * 100}
+                onChange={(e) => setVatRate(parseFloat(e.target.value) / 100)}
+                min="0"
+              />
+            </div>
+            <div className="col-md-3 mt-3">
+              <label className="form-label">Discount Rate (%)</label>
+              <input
+                type="number"
+                className="form-control"
+                value={discountRate * 100}
+                onChange={(e) => setDiscountRate(parseFloat(e.target.value) / 100)}
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table table-bordered table-hover">
+              <thead className="table-primary">
+                <tr>
+                  <th>Name</th>
+                  <th>Price</th>
+                  <th>Supplier</th>
+                  <th>Select</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>KES {item.selling_price.toFixed(2)}</td>
+                    <td>{item.supplier?.name || 'N/A'}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => handleSelectItem(item)}
+                        disabled={selectedItems.some(i => i.id === item.id)}
+                      >
+                        <FaPlus className="me-1" />
+                        {selectedItems.some(i => i.id === item.id) ? 'Selected' : 'Add'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {pageCount > 1 && (
+            <div className="d-flex justify-content-center my-3">
+              <ReactPaginate
+                previousLabel={'← Previous'}
+                nextLabel={'Next →'}
+                pageCount={pageCount}
+                onPageChange={handlePageClick}
+                containerClassName={'pagination'}
+                pageClassName={'page-item'}
+                pageLinkClassName={'page-link'}
+                previousClassName={'page-item'}
+                previousLinkClassName={'page-link'}
+                nextClassName={'page-item'}
+                nextLinkClassName={'page-link'}
+                activeClassName={'active'}
+              />
+            </div>
+          )}
+
+          <h4 className="mt-4">🛒 Selected Items</h4>
+          <div className="table-responsive">
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedItems.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-control"
+                        value={item.quantity}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                      />
+                    </td>
+                    <td>KES {item.selling_price.toFixed(2)}</td>
+                    <td>KES {(item.selling_price * item.quantity).toFixed(2)}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleRemoveItem(item.id)}
+                      >
+                        <FaTrash /> Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-3">
+            <h5>Subtotal: KES {subtotal.toFixed(2)}</h5>
+            <h5>VAT ({(vatRate * 100).toFixed(0)}%): KES {vat.toFixed(2)}</h5>
+            <h5>Discount ({(discountRate * 100).toFixed(0)}%): -KES {discount.toFixed(2)}</h5>
+            <h4 className="text-primary">Total: KES {total.toFixed(2)}</h4>
+          </div>
+
+          <div className="mb-3 mt-4">
+            <label className="form-label">Send to Email</label>
+            <input
+              type="email"
+              className="form-control"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter recipient email"
+            />
+          </div>
+
+          <div className="d-flex gap-3">
+            <button className="btn btn-danger" onClick={generatePDF}>
+              <FaFilePdf className="me-1" /> Download PDF
+            </button>
+            <button className="btn btn-primary" onClick={sendEmail}>
+              <FaPaperPlane className="me-1" /> Send Email
+            </button>
+          </div>
         </div>
-        <div className="col-md-3">
-          <label className="form-label">Customer Name</label>
-          <input
-            type="text"
-            className="form-control"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Enter customer name"
-          />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label">VAT Rate (%)</label>
-          <input
-            type="number"
-            className="form-control"
-            value={vatRate * 100}
-            onChange={(e) => setVatRate(parseFloat(e.target.value) / 100)}
-            min="0"
-          />
-        </div>
-        <div className="col-md-3 mt-3">
-          <label className="form-label">Discount Rate (%)</label>
-          <input
-            type="number"
-            className="form-control"
-            value={discountRate * 100}
-            onChange={(e) => setDiscountRate(parseFloat(e.target.value) / 100)}
-            min="0"
-          />
-        </div>
-      </div>
-
-      <table className="table table-bordered table-hover">
-        <thead className="table-light">
-          <tr>
-            <th>Name</th>
-            <th>Price</th>
-            <th>Supplier</th>
-            <th>Select</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentItems.map(item => (
-            <tr key={item.id}>
-              <td>{item.name}</td>
-              <td>KES {item.selling_price.toFixed(2)}</td>
-              <td>{item.supplier?.name || 'N/A'}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={() => handleSelectItem(item)}
-                  disabled={selectedItems.some(i => i.id === item.id)}
-                >
-                  {selectedItems.some(i => i.id === item.id) ? 'Selected' : 'Add'}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {pageCount > 1 && (
-        <div className="d-flex justify-content-center my-3">
-          <ReactPaginate
-            previousLabel={'← Previous'}
-            nextLabel={'Next →'}
-            pageCount={pageCount}
-            onPageChange={handlePageClick}
-            containerClassName={'pagination'}
-            pageClassName={'page-item'}
-            pageLinkClassName={'page-link'}
-            previousClassName={'page-item'}
-            previousLinkClassName={'page-link'}
-            nextClassName={'page-item'}
-            nextLinkClassName={'page-link'}
-            activeClassName={'active'}
-          />
-        </div>
-      )}
-
-      <h4 className="mt-4">Selected Items</h4>
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {selectedItems.map(item => (
-            <tr key={item.id}>
-              <td>{item.name}</td>
-              <td>
-                <input
-                  type="number"
-                  min="1"
-                  className="form-control"
-                  value={item.quantity}
-                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                />
-              </td>
-              <td>KES {item.selling_price.toFixed(2)}</td>
-              <td>KES {(item.selling_price * item.quantity).toFixed(2)}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleRemoveItem(item.id)}
-                >
-                  Remove
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="mt-3">
-        <h5>Subtotal: KES {subtotal.toFixed(2)}</h5>
-        <h5>VAT ({(vatRate * 100).toFixed(0)}%): KES {vat.toFixed(2)}</h5>
-        <h5>Discount ({(discountRate * 100).toFixed(0)}%): -KES {discount.toFixed(2)}</h5>
-        <h4>Total: KES {total.toFixed(2)}</h4>
-      </div>
-
-      <div className="mb-3 mt-4">
-        <label className="form-label">Send to Email</label>
-        <input
-          type="email"
-          className="form-control"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter recipient email"
-        />
-      </div>
-
-      <div className="d-flex gap-3">
-        <button className="btn btn-success" onClick={generatePDF}>Download PDF</button>
-        <button className="btn btn-primary" onClick={sendEmail}>Send Email</button>
       </div>
     </div>
   );
