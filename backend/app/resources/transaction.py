@@ -1,4 +1,3 @@
-# transactions.py
 from flask_restful import Resource
 from flask import request
 from app.extensions import db
@@ -16,7 +15,9 @@ class TransactionResource(Resource):
             "item_id": tx.item_id,
             "quantity_sold": tx.quantity_sold,
             "total_price": tx.total_price,
-            "date": tx.group.date.isoformat() if tx.group else None
+            "date": tx.group.date.isoformat() if tx.group else None,
+            "payment_method": tx.group.payment_method if tx.group else None,
+            "customer_name": tx.group.customer_name if tx.group else None
         }
 
     def delete(self, tx_id):
@@ -50,6 +51,8 @@ class TransactionList(Resource):
                 grouped[gid] = {
                     "transaction_id": tx.group.transaction_id if tx.group else None,
                     "date": tx.group.date.isoformat() if tx.group else None,
+                    "payment_method": tx.group.payment_method if tx.group else None,
+                    "customer_name": tx.group.customer_name if tx.group else None,
                     "transactions": []
                 }
             grouped[gid]["transactions"].append({
@@ -79,7 +82,9 @@ class TransactionList(Resource):
         transaction_id = str(uuid.uuid4())
         tx_group = TransactionGroup(
             transaction_id=transaction_id,
-            date=datetime.utcnow()
+            date=datetime.utcnow(),
+            payment_method=payment_method,
+            customer_name=customer_name
         )
         db.session.add(tx_group)
         transactions = []

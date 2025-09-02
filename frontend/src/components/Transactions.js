@@ -61,6 +61,16 @@ export default function Transactions() {
     );
   }, [transactions]);
 
+  const getPaymentBadgeVariant = (method) => {
+    if (!method) return 'secondary';
+    switch (method.toLowerCase()) {
+      case 'cash': return 'success';
+      case 'mpesa': return 'primary';
+      case 'credit': return 'warning';
+      default: return 'secondary';
+    }
+  };
+
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text('Transactions Report', 14, 15);
@@ -70,8 +80,23 @@ export default function Transactions() {
       doc.setFontSize(11);
       doc.text(`Transaction ID: ${group.transaction_id}`, 14, startY);
       doc.text(`Date: ${new Date(group.date).toLocaleString()}`, 14, startY + 5);
-      doc.text(`Payment Method: ${group.payment_method}`, 14, startY + 10);
-      startY += 15;
+
+      // Payment method badge with color
+      let badgeColor;
+      switch ((group.payment_method || '').toLowerCase()) {
+        case 'cash': badgeColor = [0, 128, 0]; break;       // green
+        case 'mpesa': badgeColor = [0, 123, 255]; break;    // blue
+        case 'credit': badgeColor = [255, 193, 7]; break;   // yellow
+        default: badgeColor = [108, 117, 125];              // gray
+      }
+
+      doc.setFillColor(...badgeColor);
+      doc.rect(14, startY + 10, 40, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text(group.payment_method || 'N/A', 16, startY + 14);
+      doc.setTextColor(0, 0, 0);
+
+      startY += 20;
 
       autoTable(doc, {
         startY,
@@ -150,11 +175,7 @@ export default function Transactions() {
       )}
 
       {currentGroups.map(group => {
-        const groupTotal = group.transactions.reduce(
-          (sum, tx) => sum + tx.total_price,
-          0
-        );
-
+        const groupTotal = group.transactions.reduce((sum, tx) => sum + tx.total_price, 0);
         return (
           <Card key={group.transaction_id} className="mb-4 shadow-sm">
             <Card.Header>
@@ -162,7 +183,12 @@ export default function Transactions() {
               <span className="text-muted float-end">{new Date(group.date).toLocaleString()}</span>
             </Card.Header>
             <Card.Body>
-              <p><strong>Payment Method:</strong> {group.payment_method}</p>
+              <p>
+                <strong>Payment Method:</strong>{' '}
+                <Badge bg={getPaymentBadgeVariant(group.payment_method)}>
+                  {group.payment_method || 'N/A'}
+                </Badge>
+              </p>
               {group.transactions.map(tx => (
                 <Row key={tx.id} className="mb-2">
                   <Col xs={6}>{tx.item_name}</Col>

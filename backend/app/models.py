@@ -58,11 +58,15 @@ class Item(db.Model):
         }
 
 
-# 🔹 New TransactionGroup (represents a single receipt / sale)
+# 🔹 TransactionGroup represents a single receipt / purchase
 class TransactionGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(db.String(36), unique=True, nullable=False)  # UUID
     date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # ✅ New fields for payment info
+    payment_method = db.Column(db.String(20), default='cash')
+    customer_name = db.Column(db.String(120), nullable=True)
 
     transactions = db.relationship('Transaction', backref='group', lazy=True)
 
@@ -73,6 +77,8 @@ class TransactionGroup(db.Model):
         return {
             'transaction_id': self.transaction_id,
             'date': self.date.strftime("%Y-%m-%d %H:%M:%S"),
+            'payment_method': self.payment_method,
+            'customer_name': self.customer_name,
             'items': [t.to_dict() for t in self.transactions]
         }
 
