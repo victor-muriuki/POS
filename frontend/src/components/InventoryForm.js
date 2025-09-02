@@ -18,6 +18,8 @@ const InventoryForm = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  const backendUrl = 'http://localhost:5000'; // Flask backend URL
+
   const showToast = (message, isError = false) => {
     const toastFn = isError ? toast.error : toast.success;
     toastFn(message, {
@@ -34,10 +36,10 @@ const InventoryForm = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/items', {
+      const res = await fetch(`${backendUrl}/items`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
@@ -120,14 +122,17 @@ const InventoryForm = () => {
     };
 
     setLoading(true);
-
     try {
+      const token = localStorage.getItem('token');
       const method = editingItem ? 'PUT' : 'POST';
-      const url = editingItem ? `/items/${editingItem.id}` : '/items';
+      const url = editingItem ? `${backendUrl}/items/${editingItem.id}` : `${backendUrl}/items`;
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -158,8 +163,19 @@ const InventoryForm = () => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const response = await fetch(`/items/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${backendUrl}/items/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete');
+      }
+
       showToast('Item deleted successfully');
       fetchItems();
       if (currentItems.length === 1 && currentPage > 1) {
