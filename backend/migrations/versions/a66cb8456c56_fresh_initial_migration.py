@@ -1,8 +1,8 @@
-"""Initial schema with role and Supplier
+"""Fresh initial migration
 
-Revision ID: 8d288c76de43
+Revision ID: a66cb8456c56
 Revises: 
-Create Date: 2025-07-04 06:58:12.805714
+Create Date: 2025-09-02 04:31:00.721794
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8d288c76de43'
+revision = 'a66cb8456c56'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,6 +25,13 @@ def upgrade():
     sa.Column('email', sa.String(length=120), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
+    )
+    op.create_table('transaction_group',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('transaction_id', sa.String(length=36), nullable=False),
+    sa.Column('date', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('transaction_id')
     )
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -48,10 +55,11 @@ def upgrade():
     )
     op.create_table('transaction',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('item_id', sa.Integer(), nullable=True),
+    sa.Column('group_id', sa.Integer(), nullable=False),
+    sa.Column('item_id', sa.Integer(), nullable=False),
     sa.Column('quantity_sold', sa.Integer(), nullable=False),
     sa.Column('total_price', sa.Float(), nullable=False),
-    sa.Column('date', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['group_id'], ['transaction_group.id'], ),
     sa.ForeignKeyConstraint(['item_id'], ['item.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -63,5 +71,6 @@ def downgrade():
     op.drop_table('transaction')
     op.drop_table('item')
     op.drop_table('user')
+    op.drop_table('transaction_group')
     op.drop_table('supplier')
     # ### end Alembic commands ###

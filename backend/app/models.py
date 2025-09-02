@@ -16,6 +16,7 @@ class Supplier(db.Model):
     name = db.Column(db.String(120), unique=True, nullable=False)
     contact = db.Column(db.String(120), nullable=True)
     email = db.Column(db.String(120), nullable=True)
+
     items = db.relationship('Item', backref='supplier', lazy=True)
 
     def __repr__(self):
@@ -40,6 +41,8 @@ class Item(db.Model):
 
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
 
+    transactions = db.relationship('Transaction', backref='item', lazy=True)
+
     def __repr__(self):
         return f"<Item {self.name}>"
 
@@ -55,14 +58,39 @@ class Item(db.Model):
         }
 
 
-class Transaction(db.Model):
+# 🔹 New TransactionGroup (represents a single receipt / sale)
+class TransactionGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
-    quantity_sold = db.Column(db.Integer, nullable=False)
-    total_price = db.Column(db.Float, nullable=False)
+    transaction_id = db.Column(db.String(36), unique=True, nullable=False)  # UUID
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
-    item = db.relationship('Item', backref='transactions')
+    transactions = db.relationship('Transaction', backref='group', lazy=True)
 
     def __repr__(self):
-        return f"<Transaction {self.id}>"
+        return f"<TransactionGroup {self.transaction_id}>"
+
+    def to_dict(self):
+        return {
+            'transaction_id': self.transaction_id,
+            'date': self.date.strftime("%Y-%m-%d %H:%M:%S"),
+            'items': [t.to_dict() for t in self.transactions]
+        }
+
+
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('transaction_group.id'), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('item.id'), nullable=False)
+    quantity_sold = db.Column(db.Integer, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+
+    def __repr__(self):
+        return f"<Transaction {self.id} in Group {self.group_id}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'item': self.item.to_dict(),
+            'quantity_sold': self.quantity_sold,
+            'total_price': self.total_price
+        }

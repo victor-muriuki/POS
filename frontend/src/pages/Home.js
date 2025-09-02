@@ -1,57 +1,72 @@
 // src/pages/Home.js
-import React from 'react';
-import { Container, Row, Col, Card, Button, Image } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Container, Row, Col, Card } from 'react-bootstrap';
+import heroImage from '../assets/hero.jpg'; // Ensure the image exists in src/assets
 
-function Home() {
-  const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem('token'); // Check token existence
+const Home = () => {
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({ totalStock: 0, todaysSales: 0 });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    axios.get('http://localhost:5000/user', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => setUser(res.data)).catch(console.error);
+
+    axios.get('http://localhost:5000/stats', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => setStats(res.data)).catch(console.error);
+  }, []);
 
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center mb-4">
-        <Col md={10} lg={8}>
-          {/* Hero Image */}
-          <Image
-            src="https://source.unsplash.com/featured/?inventory,warehouse"
-            fluid
-            rounded
-            className="shadow mb-4"
-            style={{ maxHeight: '300px', objectFit: 'cover', width: '100%' }}
-            alt="Inventory Hero"
-          />
-        </Col>
-      </Row>
+    <div className="container mt-4">
+      {/* Hero Section with overlay */}
+      <div
+        className="position-relative text-white text-center mb-5"
+        style={{
+          height: '300px',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url(${heroImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '20px'
+        }}
+      >
+        <h1 className="fw-bold">Inventory Management System</h1>
+        <p className="lead">Track your stock, record sales, and grow your business.</p>
+      </div>
 
-      <Row className="justify-content-center">
-        <Col md={8} lg={6}>
-          <Card className="text-center shadow p-4">
+      {/* Greeting */}
+      <h3 className="mb-4">Welcome back, {user?.username || 'User'}!</h3>
+
+      {/* Quick Stats */}
+      <Row className="mb-5">
+        <Col md={6}>
+          <Card className="shadow-sm border-0">
             <Card.Body>
-              <Card.Title as="h2" className="mb-3 text-primary">
-                {isLoggedIn
-                  ? 'Welcome Back!'
-                  : 'Welcome to the Inventory Management System'}
-              </Card.Title>
-
-              <Card.Text className="mb-4 text-muted">
-                {isLoggedIn
-                  ? 'Manage your inventory, track sales, and generate reports all in one place.'
-                  : 'Please log in to access your inventory and sales tools.'}
-              </Card.Text>
-
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => navigate(isLoggedIn ? '/inventory' : '/login')}
-              >
-                {isLoggedIn ? '📦 Go to Inventory' : '🔐 Log In to Continue'}
-              </Button>
+              <Card.Title>Total Stock Items</Card.Title>
+              <Card.Text className="fs-3 fw-bold">{stats.totalStock}</Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={6}>
+          <Card className="shadow-sm border-0">
+            <Card.Body>
+              <Card.Title>Today's Sales</Card.Title>
+              <Card.Text className="fs-3 fw-bold">Ksh {stats.todaysSales.toFixed(2)}</Card.Text>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-    </Container>
+    </div>
   );
-}
+};
 
 export default Home;

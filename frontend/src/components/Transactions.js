@@ -20,16 +20,14 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterDate, setFilterDate] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const transactionsPerPage = 6;
+  const groupsPerPage = 3;
 
   useEffect(() => {
     let url = 'http://localhost:5000/transactions';
-    if (filterDate) {
-      url += `?date=${filterDate}`;
-    }
+    if (filterDate) url += `?date=${filterDate}`;
     setLoading(true);
+
     fetch(url)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch transactions');
@@ -45,39 +43,66 @@ export default function Transactions() {
       });
   }, [filterDate]);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) =>
-      tx.item_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [transactions, searchTerm]);
+  const totalPages = Math.ceil(transactions.length / groupsPerPage);
+  const currentGroups = useMemo(() => {
+    const start = (currentPage - 1) * groupsPerPage;
+    return transactions.slice(start, start + groupsPerPage);
+  }, [transactions, currentPage]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
-  const currentTransactions = useMemo(() => {
-    const start = (currentPage - 1) * transactionsPerPage;
-    return filteredTransactions.slice(start, start + transactionsPerPage);
-  }, [filteredTransactions, currentPage]);
+  const flattenedTransactions = useMemo(() => {
+    return transactions.flatMap(group =>
+      group.transactions.map(tx => ({
+        ...tx,
+        date: group.date,
+        transaction_id: group.transaction_id,
+        payment_method: group.payment_method,
+        customer_name: group.customer_name
+      }))
+    );
+  }, [transactions]);
 
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text('Transactions Report', 14, 15);
-    autoTable(doc, {
-      head: [['Item Name', 'Quantity Sold', 'Total Price (KES)', 'Date']],
-      body: filteredTransactions.map((tx) => [
-        tx.item_name,
-        tx.quantity_sold,
-        tx.total_price.toFixed(2),
-        new Date(tx.date).toLocaleString(),
-      ]),
-      startY: 25,
+    let startY = 20;
+
+    transactions.forEach(group => {
+      doc.setFontSize(11);
+      doc.text(`Transaction ID: ${group.transaction_id}`, 14, startY);
+      doc.text(`Date: ${new Date(group.date).toLocaleString()}`, 14, startY + 5);
+      doc.text(`Payment Method: ${group.payment_method}`, 14, startY + 10);
+      startY += 15;
+
+      autoTable(doc, {
+        startY,
+        head: [['Item Name', 'Qty Sold', 'Total (KES)']],
+        body: group.transactions.map(tx => [
+          tx.item_name,
+          tx.quantity_sold,
+          tx.total_price.toFixed(2)
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: [100, 149, 237] },
+        margin: { left: 14, right: 14 },
+      });
+
+      const groupTotal = group.transactions.reduce((sum, tx) => sum + tx.total_price, 0);
+      doc.text(`Total Amount: Ksh ${groupTotal.toFixed(2)}`, 14, doc.lastAutoTable.finalY + 8);
+
+      startY = doc.lastAutoTable.finalY + 15;
     });
+
     doc.save('transactions.pdf');
   };
 
   const csvHeaders = [
+    { label: 'Transaction ID', key: 'transaction_id' },
     { label: 'Item Name', key: 'item_name' },
     { label: 'Quantity Sold', key: 'quantity_sold' },
     { label: 'Total Price', key: 'total_price' },
     { label: 'Date', key: 'date' },
+    { label: 'Payment Method', key: 'payment_method' },
+    { label: 'Customer Name', key: 'customer_name' },
   ];
 
   return (
@@ -96,25 +121,13 @@ export default function Transactions() {
             }}
           />
         </Col>
-        <Col md={4}>
-          <Form.Label>Search by Item Name</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Search item..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </Col>
-        <Col md={4} className="d-flex align-items-end gap-2">
+        <Col md={8} className="d-flex align-items-end gap-2">
           <Button variant="danger" onClick={exportPDF}>
             <FaFilePdf className="me-1" /> Export PDF
           </Button>
           <CSVLink
             headers={csvHeaders}
-            data={filteredTransactions}
+            data={flattenedTransactions}
             filename="transactions.csv"
             className="btn btn-success"
           >
@@ -132,36 +145,52 @@ export default function Transactions() {
 
       {error && <Alert variant="danger">Error: {error}</Alert>}
 
-      {!loading && filteredTransactions.length === 0 && (
+      {!loading && transactions.length === 0 && (
         <Alert variant="info">No transactions found.</Alert>
       )}
 
-      <Row>
-        {currentTransactions.map((tx) => (
-          <Col key={tx.id} md={6} lg={4} className="mb-4">
-            <Card className="h-100 shadow-sm">
-              <Card.Body>
-                <Card.Title className="text-primary">{tx.item_name || 'Unknown Item'}</Card.Title>
-                <Card.Text>
-                  <strong>Quantity Sold:</strong>{' '}
-                  <Badge bg="secondary">{tx.quantity_sold}</Badge>
-                  <br />
-                  <strong>Total Price:</strong>{' '}
-                  <Badge bg="success">Ksh {tx.total_price.toFixed(2)}</Badge>
-                  <br />
-                  <strong>Date:</strong> {new Date(tx.date).toLocaleString()}
-                </Card.Text>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {currentGroups.map(group => {
+        const groupTotal = group.transactions.reduce(
+          (sum, tx) => sum + tx.total_price,
+          0
+        );
+
+        return (
+          <Card key={group.transaction_id} className="mb-4 shadow-sm">
+            <Card.Header>
+              <strong>Transaction ID:</strong> {group.transaction_id}{' '}
+              <span className="text-muted float-end">{new Date(group.date).toLocaleString()}</span>
+            </Card.Header>
+            <Card.Body>
+              <p><strong>Payment Method:</strong> {group.payment_method}</p>
+              {group.transactions.map(tx => (
+                <Row key={tx.id} className="mb-2">
+                  <Col xs={6}>{tx.item_name}</Col>
+                  <Col xs={2}>
+                    <Badge bg="secondary">{tx.quantity_sold}</Badge>
+                  </Col>
+                  <Col xs={4}>
+                    <Badge bg="success">Ksh {tx.total_price.toFixed(2)}</Badge>
+                  </Col>
+                </Row>
+              ))}
+              <hr />
+              <Row className="mt-2">
+                <Col xs={6}><strong>Total Amount:</strong></Col>
+                <Col xs={6}>
+                  <Badge bg="warning" className="text-dark">Ksh {groupTotal.toFixed(2)}</Badge>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        );
+      })}
 
       {totalPages > 1 && (
         <div className="d-flex justify-content-center mt-4">
           <ul className="pagination">
             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}>
+              <button className="page-link" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}>
                 Previous
               </button>
             </li>
@@ -173,7 +202,7 @@ export default function Transactions() {
               </li>
             ))}
             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}>
+              <button className="page-link" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}>
                 Next
               </button>
             </li>

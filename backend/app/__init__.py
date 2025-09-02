@@ -1,7 +1,7 @@
 # __init__.py
 from flask import Flask
 from flask_restful import Api
-from .extensions import db, migrate, bcrypt, jwt, mail  # ✅ Add mail
+from .extensions import db, migrate, bcrypt, jwt, mail
 from flask_cors import CORS
 
 # Import resources
@@ -10,7 +10,7 @@ from .resources.item import ItemResource, ItemList, ItemByBarcode
 from .resources.transaction import TransactionResource, TransactionList
 from .resources.supplier import SupplierList
 
-# ✅ Import blueprint for sending quotations
+# Import blueprint for sending quotations
 from .routes.quotation import quotation_bp
 
 
@@ -23,8 +23,14 @@ def create_app():
     migrate.init_app(app, db)
     bcrypt.init_app(app)
     jwt.init_app(app)
-    mail.init_app(app)  # ✅ Initialize mail
-    CORS(app)
+    mail.init_app(app)
+
+    # ✅ Enable CORS only for React frontend
+    CORS(
+        app,
+        resources={r"/*": {"origins": "http://localhost:3000"}},
+        supports_credentials=True
+    )
 
     # Register Flask-Restful API
     api = Api(app)
@@ -45,7 +51,7 @@ def create_app():
     # Supplier endpoints
     api.add_resource(SupplierList, '/suppliers')
 
-    # ✅ Register blueprint for email feature
+    # Register blueprint for email feature
     app.register_blueprint(quotation_bp)
 
     return app
