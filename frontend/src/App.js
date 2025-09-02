@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -14,11 +14,12 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ItemsList from './pages/ItemsList';
 import Home from './pages/Home';
-import QuotationForm from './components/QuotationForm'; // ✅ Import Quotation component
+import QuotationForm from './components/QuotationForm';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Check token on mount and periodically
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
@@ -37,10 +38,23 @@ function App() {
 
       <div className="container mt-3">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
-          <Route path="/register" element={<Register />} />
+          {/* Landing page: Login if not logged in, Home if logged in */}
+          <Route
+            path="/"
+            element={isLoggedIn ? <Home /> : <Login setIsLoggedIn={setIsLoggedIn} />}
+          />
 
+          {/* Optional: direct login/register routes */}
+          <Route
+            path="/login"
+            element={isLoggedIn ? <Navigate to="/" /> : <Login setIsLoggedIn={setIsLoggedIn} />}
+          />
+          <Route
+            path="/register"
+            element={isLoggedIn ? <Navigate to="/" /> : <Register />}
+          />
+
+          {/* Protected routes */}
           <Route
             path="/items"
             element={
@@ -73,8 +87,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* ✅ Add quotation route */}
           <Route
             path="/quotation"
             element={
@@ -84,6 +96,7 @@ function App() {
             }
           />
 
+          {/* Fallback for unmatched routes */}
           <Route path="*" element={<h2 className="text-center mt-5">Page not found</h2>} />
         </Routes>
       </div>

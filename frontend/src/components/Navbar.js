@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaSignOutAlt, FaSignInAlt, FaClipboardList, FaWarehouse, FaCashRegister, FaFileInvoiceDollar, FaUserPlus } from 'react-icons/fa';
+import {
+  FaUser,
+  FaSignOutAlt,
+  FaSignInAlt,
+  FaClipboardList,
+  FaWarehouse,
+  FaCashRegister,
+  FaFileInvoiceDollar,
+  FaUserPlus
+} from 'react-icons/fa';
 
 function Navbar({ isLoggedIn, setIsLoggedIn }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('');
 
+  // Load user info from localStorage
   useEffect(() => {
     if (isLoggedIn) {
-      const storedUsername = localStorage.getItem('username');
-      const storedRole = localStorage.getItem('role');
-      setUsername(storedUsername || '');
-      setRole(storedRole || '');
+      setUsername(localStorage.getItem('username') || '');
+      setRole(localStorage.getItem('role') || '');
     }
   }, [isLoggedIn]);
 
@@ -21,7 +29,7 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
     localStorage.removeItem('username');
     localStorage.removeItem('role');
     setIsLoggedIn(false);
-    navigate('/');
+    navigate('/login'); // redirect to login page
   };
 
   return (
@@ -43,13 +51,16 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
 
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav align-items-center">
+
+            {/* Logged In View */}
             {isLoggedIn ? (
               <>
-                <li className="nav-item me-2 text-white">
+                <li className="nav-item me-3 text-white">
                   <span className="nav-link active">
                     <FaUser className="me-1" /> Welcome, {username}
                   </span>
                 </li>
+
                 <li className="nav-item">
                   <Link className="nav-link text-white" to="/items">
                     <FaClipboardList className="me-1" /> Inventory
@@ -66,6 +77,7 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
                   </Link>
                 </li>
 
+                {/* Admin-only links */}
                 {role === 'admin' && (
                   <>
                     <li className="nav-item">
@@ -88,6 +100,7 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
                 </li>
               </>
             ) : (
+              /* Not logged in view */
               <>
                 <li className="nav-item">
                   <Link className="nav-link text-white" to="/login">
