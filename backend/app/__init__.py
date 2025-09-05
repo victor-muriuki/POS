@@ -1,7 +1,6 @@
-# __init__.py
 from flask import Flask
 from flask_restful import Api
-from .extensions import db, migrate, bcrypt, jwt, mail  # ✅ Add mail
+from .extensions import db, migrate, bcrypt, jwt, mail
 from flask_cors import CORS
 
 # Import resources
@@ -9,6 +8,7 @@ from .resources.user import UserRegister, UserLogin
 from .resources.item import ItemResource, ItemList, ItemByBarcode
 from .resources.transaction import TransactionResource, TransactionList
 from .resources.supplier import SupplierList
+from .resources.dashboard import UserInfo, Stats   # ✅ NEW
 
 # ✅ Import blueprint for sending quotations
 from .routes.quotation import quotation_bp
@@ -23,7 +23,7 @@ def create_app():
     migrate.init_app(app, db)
     bcrypt.init_app(app)
     jwt.init_app(app)
-    mail.init_app(app)  # ✅ Initialize mail
+    mail.init_app(app)
     CORS(app)
 
     # Register Flask-Restful API
@@ -44,6 +44,10 @@ def create_app():
 
     # Supplier endpoints
     api.add_resource(SupplierList, '/suppliers')
+
+    # ✅ Dashboard endpoints
+    api.add_resource(UserInfo, '/user')
+    api.add_resource(Stats, '/stats')
 
     # ✅ Register blueprint for email feature
     app.register_blueprint(quotation_bp)
