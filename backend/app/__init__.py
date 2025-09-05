@@ -18,6 +18,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
 
+    # ✅ JWT configuration fixes
+    app.config['JWT_TOKEN_LOCATION'] = ['headers']         # only accept tokens from headers
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = False          # disable CSRF for header tokens
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)

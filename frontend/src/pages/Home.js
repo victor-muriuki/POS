@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import heroImage from '../assets/hero.jpg';
 
 const Home = () => {
@@ -12,28 +12,29 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login', { replace: true });
-        return;
-      }
+    // Get user info from localStorage
+    const username = localStorage.getItem('username') || '';
+    const role = localStorage.getItem('role') || 'user';
+    const token = localStorage.getItem('token');
 
+    if (!token) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    setUser({ username, role });
+
+    const fetchStats = async () => {
       try {
-        // Fetch logged-in user info
-        const userRes = await axios.get('http://localhost:5000/user', {
+        const res = await axios.get('http://localhost:5000/stats', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUser(userRes.data);
-
-        // Fetch quick stats
-        const statsRes = await axios.get('http://localhost:5000/stats', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setStats(statsRes.data);
+        setStats(res.data);
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem('token');
+          localStorage.removeItem('username');
+          localStorage.removeItem('role');
           navigate('/login', { state: { message: 'Session expired. Please log in again.' }, replace: true });
         } else {
           setError('Failed to load data. Please try again later.');
@@ -43,18 +44,21 @@ const Home = () => {
       }
     };
 
-    fetchData();
-  }, []); // Empty dependency array ensures this runs only once
+    fetchStats();
+  }, [navigate]);
+
+  const isAdmin = user.role === 'admin';
 
   return (
     <div>
       {/* Hero Section */}
       <div
-        className="position-relative text-white text-center"
+        className="position-relative text-dark text-center"
         style={{
           width: '100%',
           height: '300px',
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url(${heroImage})`,
+          backgroundColor: '#f8f9fa',
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)), url(${heroImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -74,16 +78,9 @@ const Home = () => {
             <Spinner animation="border" role="status" aria-label="Loading data" />
           </div>
         ) : error ? (
-          <Alert variant="danger" className="text-center">
-            {error}
-          </Alert>
+          <Alert variant="danger" className="text-center">{error}</Alert>
         ) : (
           <>
-            {/* Personalized Greeting with role */}
-            <h3 className="mb-4">
-              Welcome back, {user.username || 'Guest'}{user.role ? ` (${user.role})` : ''}!
-            </h3>
-
             {/* Quick Stats */}
             <Row className="g-4 mb-4">
               <Col md={6}>
@@ -106,41 +103,20 @@ const Home = () => {
 
             {/* Action Buttons */}
             <div className="d-flex flex-wrap justify-content-center gap-3 mb-5">
-              <Button
-                variant="primary"
-                size="lg"
-                aria-label="Sell item"
-                onClick={() => navigate('/sell')}
-              >
+              <Button variant="primary" size="lg" onClick={() => navigate('/sell')}>
                 Sell Item
               </Button>
-
-              <Button
-                variant="secondary"
-                size="lg"
-                aria-label="View transactions"
-                onClick={() => navigate('/transactions')}
-              >
+              <Button variant="secondary" size="lg" onClick={() => navigate('/transactions')}>
                 View Transactions
               </Button>
 
-              {/* Role-based actions */}
-              {user.role === 'admin' && (
+              {/* Admin-only actions */}
+              {isAdmin && (
                 <>
-                  <Button
-                    variant="success"
-                    size="lg"
-                    aria-label="Add inventory"
-                    onClick={() => navigate('/inventory-form')}
-                  >
+                  <Button variant="success" size="lg" onClick={() => navigate('/inventory-form')}>
                     Add Inventory
                   </Button>
-                  <Button
-                    variant="warning"
-                    size="lg"
-                    aria-label="Generate quotation"
-                    onClick={() => navigate('/quotation')}
-                  >
+                  <Button variant="warning" size="lg" onClick={() => navigate('/quotation')}>
                     Generate Quotation
                   </Button>
                 </>

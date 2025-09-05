@@ -31,8 +31,9 @@ class UserLogin(Resource):
         data = user_parser.parse_args()
         user = User.query.filter_by(username=data['username']).first()
         if user and bcrypt.check_password_hash(user.password_hash, data['password']):
-            # ✅ Use user.id as identity
+            # ✅ Issue access token with user.id as identity
             access_token = create_access_token(identity=user.id)
+
             return {
                 "access_token": access_token,
                 "username": user.username,
@@ -40,3 +41,14 @@ class UserLogin(Resource):
             }, 200
 
         return {"message": "Invalid credentials"}, 401
+
+
+# Optional: test endpoint to verify JWT works
+class TestJWT(Resource):
+    @jwt_required()
+    def get(self):
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if not user:
+            return {"message": "User not found"}, 404
+        return {"username": user.username, "role": user.role}, 200
