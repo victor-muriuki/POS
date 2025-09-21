@@ -1,32 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { Button, Form, Toast, ToastContainer, Table, Row, Col, Card } from 'react-bootstrap';
-import Select from 'react-select';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import {
+  Button,
+  Form,
+  Toast,
+  ToastContainer,
+  Table,
+  Row,
+  Col,
+  Card,
+} from "react-bootstrap";
+import Select from "react-select";
+import Receipt from "./Receipt"; // ✅ import the new receipt component
 
 const SellForm = () => {
   const [items, setItems] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [message, setMessage] = useState('');
-  const [barcode, setBarcode] = useState('');
+  const [message, setMessage] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState([]);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [customerName, setCustomerName] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [customerName, setCustomerName] = useState("");
 
   const receiptRef = useRef();
 
   useEffect(() => {
-    axios.get('http://localhost:5000/items')
-      .then(res => setItems(res.data))
-      .catch(err => console.error(err));
+    axios
+      .get("http://localhost:5000/items")
+      .then((res) => setItems(res.data))
+      .catch((err) => console.error(err));
   }, []);
 
-  const itemOptions = items.map(item => ({
+  const itemOptions = items.map((item) => ({
     value: item.id,
     label: `${item.name} (Stock: ${item.quantity})`,
-    raw: item
+    raw: item,
   }));
 
   const handleBarcodeChange = async (e) => {
@@ -35,21 +46,23 @@ const SellForm = () => {
 
     if (code && code.length > 4) {
       try {
-        const res = await axios.get(`http://localhost:5000/items/barcode/${code}`);
+        const res = await axios.get(
+          `http://localhost:5000/items/barcode/${code}`
+        );
         const item = res.data;
         addItem(item);
         setMessage(`Selected: ${item.name}`);
       } catch {
-        setMessage('Item not found for barcode');
+        setMessage("Item not found for barcode");
       }
       setShowToast(true);
-      setBarcode('');
+      setBarcode("");
     }
   };
 
   const addItem = (item) => {
-    if (selectedItems.some(si => si.item.id === item.id)) return;
-    setSelectedItems(prev => [...prev, { item, quantity: 1 }]);
+    if (selectedItems.some((si) => si.item.id === item.id)) return;
+    setSelectedItems((prev) => [...prev, { item, quantity: 1 }]);
   };
 
   const handleItemSelect = (option) => {
@@ -58,50 +71,54 @@ const SellForm = () => {
   };
 
   const handleQuantityChange = (itemId, qty) => {
-    setSelectedItems(prev =>
-      prev.map(si => si.item.id === itemId ? { ...si, quantity: parseInt(qty) || 1 } : si)
+    setSelectedItems((prev) =>
+      prev.map((si) =>
+        si.item.id === itemId
+          ? { ...si, quantity: parseInt(qty) || 1 }
+          : si
+      )
     );
   };
 
   const handleRemoveItem = (itemId) => {
-    setSelectedItems(prev => prev.filter(si => si.item.id !== itemId));
+    setSelectedItems((prev) => prev.filter((si) => si.item.id !== itemId));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (selectedItems.length === 0) {
-      setMessage('Please select at least one item.');
+      setMessage("Please select at least one item.");
       setShowToast(true);
       return;
     }
 
-    if (selectedItems.some(si => si.quantity > si.item.quantity)) {
-      setMessage('Quantity exceeds available stock.');
+    if (selectedItems.some((si) => si.quantity > si.item.quantity)) {
+      setMessage("Quantity exceeds available stock.");
       setShowToast(true);
       return;
     }
 
     try {
       const transactionId = crypto.randomUUID();
-      const itemsPayload = selectedItems.map(si => ({
+      const itemsPayload = selectedItems.map((si) => ({
         item_id: si.item.id,
-        quantity_sold: si.quantity
+        quantity_sold: si.quantity,
       }));
 
-      await axios.post('http://localhost:5000/transactions', {
+      await axios.post("http://localhost:5000/transactions", {
         transaction_id: transactionId,
         payment_method: paymentMethod,
         customer_name: customerName,
-        items: itemsPayload
+        items: itemsPayload,
       });
 
       const now = new Date();
-      const receipt = selectedItems.map(si => ({
+      const receipt = selectedItems.map((si) => ({
         name: si.item.name,
         quantity: si.quantity,
         price: si.item.selling_price,
         total: si.quantity * si.item.selling_price,
-        time: now.toLocaleString()
+        time: now.toLocaleString(),
       }));
 
       setReceiptData(receipt);
@@ -110,26 +127,38 @@ const SellForm = () => {
       // Reset form
       setSelectedItems([]);
       setSelectedOption(null);
-      setCustomerName('');
-      setPaymentMethod('cash');
+      setCustomerName("");
+      setPaymentMethod("cash");
 
-      setMessage('Sale completed successfully.');
+      setMessage("Sale completed successfully.");
     } catch (err) {
-      setMessage(err.response?.data?.message || 'An error occurred.');
+      setMessage(err.response?.data?.message || "An error occurred.");
     }
     setShowToast(true);
   };
 
   const handlePrint = () => {
-    if (receiptRef.current) window.print();
-    setTimeout(() => {
-      setShowReceipt(false);
-      setReceiptData([]);
-    }, 1000);
-  };
+  if (receiptRef.current) {
+    const printContents = receiptRef.current.innerHTML;
+    const printWindow = window.open("", "", "height=600,width=400");
+    printWindow.document.write("<html><head><title>Receipt</title>");
+    printWindow.document.write("</head><body>");
+    printWindow.document.write(printContents);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  setTimeout(() => {
+    setShowReceipt(false);
+    setReceiptData([]);
+  }, 1000);
+};
+
 
   const grandTotal = selectedItems.reduce(
-    (sum, si) => sum + si.quantity * si.item.selling_price, 0
+    (sum, si) => sum + si.quantity * si.item.selling_price,
+    0
   );
 
   return (
@@ -137,8 +166,12 @@ const SellForm = () => {
       <h2 className="text-center mb-4">Sell Items</h2>
 
       <Row>
+        {/* Left: Sell form */}
         <Col md={showReceipt ? 7 : 12}>
-          <Card className="p-4 shadow-sm" style={{ borderRadius: '10px', backgroundColor: '#f9f9f9' }}>
+          <Card
+            className="p-4 shadow-sm"
+            style={{ borderRadius: "10px", backgroundColor: "#f9f9f9" }}
+          >
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
                 <Form.Label>Scan Barcode</Form.Label>
@@ -163,21 +196,21 @@ const SellForm = () => {
                   styles={{
                     control: (provided) => ({
                       ...provided,
-                      borderRadius: '8px',
-                      borderColor: '#ced4da',
-                      boxShadow: 'none',
-                      minHeight: '40px',
+                      borderRadius: "8px",
+                      borderColor: "#ced4da",
+                      boxShadow: "none",
+                      minHeight: "40px",
                     }),
                     menu: (provided) => ({
                       ...provided,
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                     }),
                     option: (provided, state) => ({
                       ...provided,
-                      backgroundColor: state.isFocused ? '#f1f3f5' : '#fff',
-                      color: '#495057',
-                      cursor: 'pointer',
+                      backgroundColor: state.isFocused ? "#f1f3f5" : "#fff",
+                      color: "#495057",
+                      cursor: "pointer",
                     }),
                   }}
                 />
@@ -197,7 +230,7 @@ const SellForm = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedItems.map(si => (
+                      {selectedItems.map((si) => (
                         <tr key={si.item.id}>
                           <td>{si.item.name}</td>
                           <td>{si.item.quantity}</td>
@@ -208,12 +241,23 @@ const SellForm = () => {
                               min="1"
                               max={si.item.quantity}
                               value={si.quantity}
-                              onChange={e => handleQuantityChange(si.item.id, e.target.value)}
+                              onChange={(e) =>
+                                handleQuantityChange(
+                                  si.item.id,
+                                  e.target.value
+                                )
+                              }
                             />
                           </td>
-                          <td>{(si.quantity * si.item.selling_price).toFixed(2)}</td>
                           <td>
-                            <Button variant="outline-danger" size="sm" onClick={() => handleRemoveItem(si.item.id)}>
+                            {(si.quantity * si.item.selling_price).toFixed(2)}
+                          </td>
+                          <td>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleRemoveItem(si.item.id)}
+                            >
                               Remove
                             </Button>
                           </td>
@@ -233,57 +277,47 @@ const SellForm = () => {
                 <Form.Control
                   type="text"
                   value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
+                  onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Enter customer name..."
                 />
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Payment Method</Form.Label>
-                <Form.Select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                <Form.Select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
                   <option value="cash">Cash</option>
                   <option value="mpesa">M-Pesa</option>
                   <option value="credit">Credit</option>
                 </Form.Select>
               </Form.Group>
 
-              <Button type="submit" variant="success" disabled={selectedItems.length === 0} className="w-100">
+              <Button
+                type="submit"
+                variant="success"
+                disabled={selectedItems.length === 0}
+                className="w-100"
+              >
                 Confirm Sale
               </Button>
             </Form>
           </Card>
         </Col>
 
+        {/* Right: Receipt */}
         {showReceipt && receiptData.length > 0 && (
-          <Col md={5}>
-            <Card ref={receiptRef} className="shadow-sm p-3" style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#fff' }}>
-              {/* Header */}
-              <div className="text-center mb-3">
-                <h5 className="fw-bold mb-1">📚 Purlow Bookshop</h5>
-                <small>Receipt</small>
-                <hr />
-              </div>
-
-              {/* Receipt Items */}
-              {receiptData.map((r, i) => (
-                <p key={i}>{r.name} x{r.quantity} @ {r.price} = {r.total.toFixed(2)}</p>
-              ))}
-
-              <hr />
-              {/* Summary */}
-              <p><strong>Total:</strong> Ksh {receiptData.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</p>
-              <p><strong>Customer:</strong> {customerName || "N/A"}</p>
-              <p><strong>Payment:</strong> {paymentMethod}</p>
-              <p><strong>Time:</strong> {receiptData[0]?.time}</p>
-
-              <hr />
-              <p className="text-center">Thank you for shopping with us!</p>
-
-              {/* Print Button */}
-              <div className="text-center mt-3 no-print">
-                <Button variant="outline-secondary" onClick={handlePrint}>🖨️ Print Receipt</Button>
-              </div>
-            </Card>
+          <Col md={5} className="d-flex justify-content-center">
+            <Receipt
+              ref={receiptRef}
+              shopName="📚 Purlow Bookshop"
+              shopAddress="Nairobi, Kenya"
+              receiptData={receiptData}
+              customerName={customerName}
+              paymentMethod={paymentMethod}
+              onPrint={handlePrint}
+            />
           </Col>
         )}
       </Row>
@@ -296,11 +330,11 @@ const SellForm = () => {
           delay={3000}
           autohide
           style={{
-            backgroundColor: '#4a90e2',
-            color: '#fff',
-            minWidth: '250px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            backgroundColor: "#4a90e2",
+            color: "#fff",
+            minWidth: "250px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           }}
         >
           <Toast.Body>{message}</Toast.Body>
