@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Button, Form, Toast, ToastContainer, Table } from 'react-bootstrap';
+import { Button, Form, Toast, ToastContainer, Table, Row, Col, Card } from 'react-bootstrap';
 import Select from 'react-select';
 
 const SellForm = () => {
@@ -136,126 +136,176 @@ const SellForm = () => {
     <div className="container my-5">
       <h2 className="text-center mb-4">Sell Items</h2>
 
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Scan Barcode</Form.Label>
-          <Form.Control
-            type="text"
-            value={barcode}
-            onChange={handleBarcodeChange}
-            placeholder="Scan barcode here..."
-            autoFocus
-          />
-        </Form.Group>
+      <Row>
+        <Col md={showReceipt ? 7 : 12}>
+          <Card className="p-4 shadow-sm" style={{ borderRadius: '10px', backgroundColor: '#f9f9f9' }}>
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Scan Barcode</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={barcode}
+                  onChange={handleBarcodeChange}
+                  placeholder="Scan barcode here..."
+                  autoFocus
+                />
+              </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Select Item (Manual)</Form.Label>
-          <Select
-            options={itemOptions}
-            onChange={handleItemSelect}
-            value={selectedOption}
-            placeholder="Search and select item..."
-            isClearable
-            isSearchable
-          />
-        </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Select Item (Manual)</Form.Label>
+                <Select
+                  options={itemOptions}
+                  onChange={handleItemSelect}
+                  value={selectedOption}
+                  placeholder="Search and select item..."
+                  isClearable
+                  isSearchable
+                  styles={{
+                    control: (provided) => ({
+                      ...provided,
+                      borderRadius: '8px',
+                      borderColor: '#ced4da',
+                      boxShadow: 'none',
+                      minHeight: '40px',
+                    }),
+                    menu: (provided) => ({
+                      ...provided,
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    }),
+                    option: (provided, state) => ({
+                      ...provided,
+                      backgroundColor: state.isFocused ? '#f1f3f5' : '#fff',
+                      color: '#495057',
+                      cursor: 'pointer',
+                    }),
+                  }}
+                />
+              </Form.Group>
 
-        {selectedItems.length > 0 && (
-          <>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Available</th>
-                  <th>Price</th>
-                  <th>Quantity</th>
-                  <th>Total</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedItems.map(si => (
-                  <tr key={si.item.id}>
-                    <td>{si.item.name}</td>
-                    <td>{si.item.quantity}</td>
-                    <td>{si.item.selling_price}</td>
-                    <td>
-                      <Form.Control
-                        type="number"
-                        min="1"
-                        max={si.item.quantity}
-                        value={si.quantity}
-                        onChange={e => handleQuantityChange(si.item.id, e.target.value)}
-                      />
-                    </td>
-                    <td>{(si.quantity * si.item.selling_price).toFixed(2)}</td>
-                    <td>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleRemoveItem(si.item.id)}>
-                        Remove
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+              {selectedItems.length > 0 && (
+                <>
+                  <Table striped bordered hover className="mt-3">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Available</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedItems.map(si => (
+                        <tr key={si.item.id}>
+                          <td>{si.item.name}</td>
+                          <td>{si.item.quantity}</td>
+                          <td>{si.item.selling_price}</td>
+                          <td>
+                            <Form.Control
+                              type="number"
+                              min="1"
+                              max={si.item.quantity}
+                              value={si.quantity}
+                              onChange={e => handleQuantityChange(si.item.id, e.target.value)}
+                            />
+                          </td>
+                          <td>{(si.quantity * si.item.selling_price).toFixed(2)}</td>
+                          <td>
+                            <Button variant="outline-danger" size="sm" onClick={() => handleRemoveItem(si.item.id)}>
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
 
-            <h5 className="text-end mb-3">
-              Total: <strong>Ksh {grandTotal.toFixed(2)}</strong>
-            </h5>
-          </>
+                  <h5 className="text-end mb-3">
+                    Total: <strong>Ksh {grandTotal.toFixed(2)}</strong>
+                  </h5>
+                </>
+              )}
+
+              <Form.Group className="mb-3">
+                <Form.Label>Customer Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  placeholder="Enter customer name..."
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Payment Method</Form.Label>
+                <Form.Select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                  <option value="cash">Cash</option>
+                  <option value="mpesa">M-Pesa</option>
+                  <option value="credit">Credit</option>
+                </Form.Select>
+              </Form.Group>
+
+              <Button type="submit" variant="success" disabled={selectedItems.length === 0} className="w-100">
+                Confirm Sale
+              </Button>
+            </Form>
+          </Card>
+        </Col>
+
+        {showReceipt && receiptData.length > 0 && (
+          <Col md={5}>
+            <Card ref={receiptRef} className="shadow-sm p-3" style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#fff' }}>
+              {/* Header */}
+              <div className="text-center mb-3">
+                <h5 className="fw-bold mb-1">📚 Purlow Bookshop</h5>
+                <small>Receipt</small>
+                <hr />
+              </div>
+
+              {/* Receipt Items */}
+              {receiptData.map((r, i) => (
+                <p key={i}>{r.name} x{r.quantity} @ {r.price} = {r.total.toFixed(2)}</p>
+              ))}
+
+              <hr />
+              {/* Summary */}
+              <p><strong>Total:</strong> Ksh {receiptData.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</p>
+              <p><strong>Customer:</strong> {customerName || "N/A"}</p>
+              <p><strong>Payment:</strong> {paymentMethod}</p>
+              <p><strong>Time:</strong> {receiptData[0]?.time}</p>
+
+              <hr />
+              <p className="text-center">Thank you for shopping with us!</p>
+
+              {/* Print Button */}
+              <div className="text-center mt-3 no-print">
+                <Button variant="outline-secondary" onClick={handlePrint}>🖨️ Print Receipt</Button>
+              </div>
+            </Card>
+          </Col>
         )}
+      </Row>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Customer Name</Form.Label>
-          <Form.Control
-            type="text"
-            value={customerName}
-            onChange={e => setCustomerName(e.target.value)}
-            placeholder="Enter customer name..."
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Payment Method</Form.Label>
-          <Form.Select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-            <option value="cash">Cash</option>
-            <option value="mpesa">M-Pesa</option>
-            <option value="credit">Credit</option>
-          </Form.Select>
-        </Form.Group>
-
-        <Button type="submit" variant="success" disabled={selectedItems.length === 0} className="w-100">
-          Confirm Sale
-        </Button>
-      </Form>
-
+      {/* Toast */}
       <ToastContainer position="top-center" className="p-3">
-        <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="info">
-          <Toast.Body className="text-white">{message}</Toast.Body>
+        <Toast
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          delay={3000}
+          autohide
+          style={{
+            backgroundColor: '#4a90e2',
+            color: '#fff',
+            minWidth: '250px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Toast.Body>{message}</Toast.Body>
         </Toast>
       </ToastContainer>
-
-      {showReceipt && receiptData.length > 0 && (
-        <div className="mt-5 d-flex justify-content-center">
-          <div className="receipt-print card shadow-sm p-4 text-start" style={{ width: '58mm', fontFamily: 'monospace', fontSize: '12px' }} ref={receiptRef}>
-            <h5 className="mb-3 text-center">🧾 Receipt</h5>
-            {receiptData.map((r, i) => (
-              <div key={i}>
-                <p>{r.name} x{r.quantity} @ {r.price} = {r.total}</p>
-              </div>
-            ))}
-            <hr />
-            <p>Total: Ksh {receiptData.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</p>
-            <p>Customer: {customerName || "N/A"}</p>
-            <p>Payment: {paymentMethod}</p>
-            <p>Time: {receiptData[0]?.time}</p>
-            <p className="text-center">Thank you!</p>
-            <div className="text-center mt-3 no-print">
-              <Button variant="outline-secondary" onClick={handlePrint}>🖨️ Print Receipt</Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
