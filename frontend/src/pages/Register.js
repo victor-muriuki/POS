@@ -32,26 +32,35 @@ function Register() {
         backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url(${heroImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: "'Poppins', sans-serif",
       }}
     >
       <div
-        className="card p-5 shadow-sm"
+        className="card p-5 shadow-lg border-0"
         style={{
-          maxWidth: '450px',
+          maxWidth: '420px',
           width: '100%',
-          borderRadius: '15px',
-          backgroundColor: 'rgba(248,249,250,0.95)',
+          borderRadius: '20px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(6px)',
         }}
       >
-        <h2 className="text-center mb-4 fw-bold" style={{ color: '#343a40' }}>
-          Register
+        <h2
+          className="text-center mb-4 fw-bold"
+          style={{ color: '#343a40', letterSpacing: '1px' }}
+        >
+          Create Account ✨
         </h2>
 
         {message && (
           <div
-            className={`alert text-center ${
-              message.includes('successful') ? 'alert-success' : 'alert-danger'
+            className={`alert text-center py-2 fw-semibold ${
+              message.includes('successful')
+                ? 'alert-success'
+                : 'alert-danger'
             }`}
+            style={{ borderRadius: '8px' }}
           >
             {message}
           </div>
@@ -59,44 +68,76 @@ function Register() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="form-label fw-semibold">Username</label>
+            <label className="form-label fw-semibold text-muted">Username</label>
             <input
               type="text"
-              className="form-control"
+              className="form-control p-3"
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
               minLength={3}
+              style={{
+                borderRadius: '10px',
+                border: '1px solid #ced4da',
+                transition: 'all 0.3s ease',
+              }}
+              onFocus={e => (e.target.style.border = '1px solid #007bff')}
+              onBlur={e => (e.target.style.border = '1px solid #ced4da')}
             />
           </div>
 
           <div className="mb-4">
-            <label className="form-label fw-semibold">Password</label>
+            <label className="form-label fw-semibold text-muted">Password</label>
             <input
               type="password"
-              className="form-control"
+              className="form-control p-3"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
               minLength={6}
+              style={{
+                borderRadius: '10px',
+                border: '1px solid #ced4da',
+                transition: 'all 0.3s ease',
+              }}
+              onFocus={e => (e.target.style.border = '1px solid #007bff')}
+              onBlur={e => (e.target.style.border = '1px solid #ced4da')}
             />
-            <small className="text-muted">Password must be at least 6 characters.</small>
+            <small className="text-muted">
+              Password must be at least 6 characters.
+            </small>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary w-100 fw-bold py-2"
+            className="btn w-100 fw-bold py-3"
             disabled={loading}
+            style={{
+              backgroundColor: '#007bff',
+              border: 'none',
+              color: 'white',
+              borderRadius: '10px',
+              transition: 'background-color 0.3s ease',
+            }}
+            onMouseEnter={e => (e.target.style.backgroundColor = '#0056b3')}
+            onMouseLeave={e => (e.target.style.backgroundColor = '#007bff')}
           >
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
 
-        <p className="text-center mt-4" style={{ color: '#6c757d' }}>
+        <p
+          className="text-center mt-4"
+          style={{ color: '#6c757d', fontSize: '0.95rem' }}
+        >
           Already have an account?{' '}
           <span
-            className="text-primary"
-            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+            className="fw-semibold"
+            style={{
+              color: '#007bff',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+            }}
             onClick={() => navigate('/login')}
           >
             Login
