@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { FaPlusCircle, FaPen, FaTrash, FaSearch } from 'react-icons/fa';
+import { FaPlusCircle, FaPen, FaTrash, FaSearch, FaSortAlphaDown, FaSortAlphaUp } from 'react-icons/fa';
 
 const InventoryForm = () => {
   const [items, setItems] = useState([]);
@@ -15,6 +15,7 @@ const InventoryForm = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -85,12 +86,18 @@ const InventoryForm = () => {
     setCurrentPage(1);
   };
 
+  // Filter + Sort combined
   const filteredItems = useMemo(() => {
-    return items.filter(item =>
+    const result = items.filter(item =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [items, searchTerm]);
+    return result.sort((a, b) =>
+      sortOrder === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name)
+    );
+  }, [items, searchTerm, sortOrder]);
 
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const currentItems = useMemo(() => {
@@ -205,29 +212,49 @@ const InventoryForm = () => {
 
   return (
     <div className="container mt-4">
-      <div className="card shadow-sm p-4">
-        <h2 className="text-center mb-4 text-primary">📦 Inventory Management</h2>
+      <div className="card shadow-sm p-4 border-0 rounded-4">
+        <h2 className="text-center mb-4 text-primary fw-bold">📦 Inventory Management</h2>
 
-        <div className="row mb-3">
-          <div className="col-md-6">
-            <div className="input-group">
-              <span className="input-group-text bg-white"><FaSearch /></span>
+        {/* Search + Sort + Add section */}
+        <div className="row g-2 align-items-center mb-4">
+          <div className="col-md-5">
+            <div className="input-group shadow-sm rounded-3">
+              <span className="input-group-text bg-light border-0"><FaSearch className="text-primary" /></span>
               <input
                 type="text"
-                className="form-control"
-                placeholder="Search items..."
+                className="form-control border-0"
+                placeholder="Search by name or supplier..."
                 value={searchTerm}
                 onChange={handleSearchChange}
               />
             </div>
           </div>
-          <div className="col-md-6 text-end">
-            <button className="btn btn-success" onClick={handleAdd}>
-              <FaPlusCircle className="me-1" /> Add Item
+
+          <div className="col-md-3">
+            <button
+              className="btn btn-outline-primary w-100 rounded-3 shadow-sm"
+              onClick={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+            >
+              {sortOrder === 'asc' ? (
+                <>
+                  <FaSortAlphaDown className="me-2" /> Sort: A → Z
+                </>
+              ) : (
+                <>
+                  <FaSortAlphaUp className="me-2" /> Sort: Z → A
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="col-md-4 text-end">
+            <button className="btn btn-primary w-100 rounded-3 shadow-sm" onClick={handleAdd}>
+              <FaPlusCircle className="me-2" /> Add Item
             </button>
           </div>
         </div>
 
+        {/* Table & Pagination */}
         {loading && items.length === 0 ? (
           <div className="text-center my-5">
             <div className="spinner-border text-primary" role="status">
@@ -235,14 +262,14 @@ const InventoryForm = () => {
             </div>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="alert alert-info text-center">
+          <div className="alert alert-info text-center rounded-3">
             {searchTerm ? 'No items match your search.' : 'No items in inventory.'}
           </div>
         ) : (
           <>
             <div className="table-responsive">
-              <table className="table table-striped table-hover">
-                <thead className="table-light">
+              <table className="table table-hover align-middle">
+                <thead className="table-primary">
                   <tr>
                     <th>Name</th>
                     <th>Quantity</th>
@@ -305,20 +332,20 @@ const InventoryForm = () => {
       {showModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog">
-            <div className="modal-content">
+            <div className="modal-content rounded-4 border-0 shadow">
               <form onSubmit={handleSubmit}>
-                <div className="modal-header">
+                <div className="modal-header bg-primary text-white rounded-top-4">
                   <h5 className="modal-title">{editingItem ? 'Update Item' : 'Add New Item'}</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)} disabled={loading}></button>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)} disabled={loading}></button>
                 </div>
                 <div className="modal-body">
                   {['name', 'quantity', 'buying_price', 'selling_price', 'supplier'].map(field => (
                     <div className="mb-3" key={field}>
-                      <label className="form-label">
+                      <label className="form-label fw-semibold">
                         {field.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')}
                       </label>
                       <input
-                        className="form-control"
+                        className="form-control shadow-sm"
                         name={field}
                         value={formData[field]}
                         onChange={handleChange}
@@ -332,7 +359,7 @@ const InventoryForm = () => {
                   ))}
                 </div>
                 <div className="modal-footer">
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                  <button type="submit" className="btn btn-primary rounded-3" disabled={loading}>
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -340,7 +367,7 @@ const InventoryForm = () => {
                       </>
                     ) : editingItem ? 'Update Item' : 'Add Item'}
                   </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={loading}>
+                  <button type="button" className="btn btn-secondary rounded-3" onClick={() => setShowModal(false)} disabled={loading}>
                     Cancel
                   </button>
                 </div>

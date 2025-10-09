@@ -4,6 +4,7 @@ import { CSVLink } from 'react-csv';
 import ReactPaginate from 'react-paginate';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { FaSortAlphaDown, FaSortAlphaUp } from 'react-icons/fa';
 
 function ItemsList() {
   const [items, setItems] = useState([]);
@@ -12,6 +13,7 @@ function ItemsList() {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+  const [alphaSort, setAlphaSort] = useState('asc');
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -25,9 +27,7 @@ function ItemsList() {
     async function fetchItems() {
       try {
         const res = await api.get('/items', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setItems(res.data);
       } catch (err) {
@@ -48,7 +48,7 @@ function ItemsList() {
     );
   }, [items, searchTerm]);
 
-  // Sorting
+  // Sorting logic
   const sortedItems = useMemo(() => {
     let sortableItems = [...filteredItems];
     if (sortConfig.key) {
@@ -64,8 +64,18 @@ function ItemsList() {
         }
       });
     }
+
+    // Apply A–Z or Z–A toggle for names
+    if (alphaSort) {
+      sortableItems.sort((a, b) =>
+        alphaSort === 'asc'
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name)
+      );
+    }
+
     return sortableItems;
-  }, [filteredItems, sortConfig]);
+  }, [filteredItems, sortConfig, alphaSort]);
 
   const pageCount = Math.ceil(sortedItems.length / itemsPerPage);
   const offset = currentPage * itemsPerPage;
@@ -80,33 +90,36 @@ function ItemsList() {
 
   const requestSort = (key) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
+  };
+
+  const toggleAlphaSort = () => {
+    setAlphaSort(prev => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text("Inventory Items", 14, 15);
-    const tableColumn = ["#", "Name", "Quantity", "Buying Price", "Selling Price", "Supplier"];
+    doc.text('Inventory Items', 14, 15);
+    const tableColumn = ['#', 'Name', 'Quantity', 'Buying Price', 'Selling Price', 'Supplier'];
     const tableRows = sortedItems.map((item, index) => [
       index + 1,
       item.name,
       item.quantity,
       `KES ${item.buying_price.toFixed(2)}`,
       `KES ${item.selling_price.toFixed(2)}`,
-      item.supplier?.name || "N/A"
+      item.supplier?.name || 'N/A'
     ]);
     doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
-    doc.save("inventory_items.pdf");
+    doc.save('inventory_items.pdf');
   };
 
   return (
     <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Inventory Items</h2>
-        <div className="d-flex">
+      {/* Header Row */}
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h2 className="fw-bold text-primary">Inventory Items</h2>
+        <div className="d-flex flex-wrap gap-2">
           <input
             type="text"
             placeholder="Search by name or supplier..."
@@ -117,9 +130,24 @@ function ItemsList() {
           <button onClick={exportToPDF} className="btn btn-danger">
             Export PDF
           </button>
+          <button
+            className={`btn ${alphaSort === 'asc' ? 'btn-outline-secondary' : 'btn-outline-dark'}`}
+            onClick={toggleAlphaSort}
+          >
+            {alphaSort === 'asc' ? (
+              <>
+                <FaSortAlphaDown /> Sort A–Z
+              </>
+            ) : (
+              <>
+                <FaSortAlphaUp /> Sort Z–A
+              </>
+            )}
+          </button>
         </div>
       </div>
 
+      {/* Main Content */}
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status">
@@ -131,8 +159,8 @@ function ItemsList() {
       ) : sortedItems.length === 0 ? (
         <p>No items available.</p>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-striped table-bordered">
+        <div className="table-responsive shadow-sm rounded">
+          <table className="table table-hover table-bordered align-middle">
             <thead className="table-light">
               <tr>
                 <th>#</th>
@@ -169,6 +197,7 @@ function ItemsList() {
         </div>
       )}
 
+      {/* Pagination */}
       {pageCount > 1 && (
         <div className="d-flex justify-content-center mt-3">
           <ReactPaginate

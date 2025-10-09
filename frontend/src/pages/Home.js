@@ -113,7 +113,7 @@ const Home = () => {
               <StyledButton
                 label="Inventory"
                 variant="outline-primary"
-                onClick={() => navigate('/inventory')}
+                onClick={() => navigate('/items')}
               />
               <StyledButton
                 label="Sell"
