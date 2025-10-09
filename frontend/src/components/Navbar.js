@@ -57,7 +57,7 @@ function Navbar({ isLoggedIn, setIsLoggedIn }) {
             fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
           }}
         >
-          📚 <span style={{ color: '#ff6b6b' }}>Purlow</span> Bookshop
+          📚 <span style={{ color: '#ff6b6b' }}>Purlow</span> Agencies
         </Link>
 
         <button
