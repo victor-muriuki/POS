@@ -1,80 +1,123 @@
 import React, { forwardRef } from "react";
 import { Button } from "react-bootstrap";
 
-const Receipt = forwardRef(({ shopName, shopAddress, receiptData, customerName, paymentMethod, onPrint }, ref) => {
-  if (!receiptData || receiptData.length === 0) return null;
+const Receipt = forwardRef(
+  ({ receiptData, customerName, paymentMethod, onPrint }, ref) => {
+    if (!receiptData || receiptData.length === 0) return null;
 
-  const subtotal = receiptData.reduce((sum, r) => sum + r.total, 0);
-  const tax = +(subtotal * 0.08).toFixed(2); // Example 8% tax
-  const balance = subtotal + tax;
-  const now = new Date();
+    const subtotal = receiptData.reduce((sum, r) => sum + r.total, 0);
+    // const tax = +(subtotal * 0.08).toFixed(2); // Commented out tax for now
+    const total = subtotal; // No tax applied
+    const now = new Date();
 
-  return (
-    <div
-      className="card shadow-sm p-3"
-      ref={ref}
-      style={{ width: "280px", fontFamily: "monospace", fontSize: "13px" }}
-    >
-      {/* Header */}
-      <h5 className="text-center fw-bold mb-1">{shopName}</h5>
-      <p className="text-center mb-2">{shopAddress}</p>
+    // Format time without seconds
+    const timeString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-      {/* Date & Time */}
-      <div className="d-flex justify-content-between">
-        <span>{now.toLocaleDateString()}</span>
-        <span>{now.toLocaleTimeString()}</span>
-      </div>
-      <hr />
+    return (
+      <div
+        ref={ref}
+        style={{
+          width: "260px",
+          margin: "0 auto",
+          padding: "10px",
+          fontFamily: "Courier New, monospace",
+          fontSize: "12px",
+          backgroundColor: "#fff",
+          color: "#000",
+          border: "1px dashed #000",
+        }}
+      >
+        {/* Header */}
+        <div className="text-center mb-2">
+          <h6 style={{ marginBottom: "2px", fontWeight: "bold", textTransform: "uppercase" }}>
+            Purlow Agencies
+          </h6>
+          <p style={{ margin: "0", fontSize: "11px" }}>Embu, Kenya</p>
+          <p style={{ margin: "0", fontSize: "11px" }}>Email: purlowagencies@gmail.com</p>
+          <p style={{ margin: "2px 0", fontSize: "11px" }}>
+            {now.toLocaleDateString()} | {timeString}
+          </p>
+        </div>
 
-      {/* Items */}
-      <table className="w-100 mb-2">
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>QTY</th>
-            <th style={{ textAlign: "left" }}>DESC</th>
-            <th style={{ textAlign: "right" }}>AMT</th>
-          </tr>
-        </thead>
-        <tbody>
-          {receiptData.map((r, i) => (
-            <tr key={i}>
-              <td>{r.quantity}</td>
-              <td>{r.name}</td>
-              <td style={{ textAlign: "right" }}>{r.total.toFixed(2)}</td>
+        <hr style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+
+        {/* Items */}
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left" }}>QTY</th>
+              <th style={{ textAlign: "left" }}>ITEM</th>
+              <th style={{ textAlign: "right" }}>AMT</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <hr />
+          </thead>
+          <tbody>
+            {receiptData.map((r, i) => (
+              <tr key={i}>
+                <td>{r.quantity}</td>
+                <td>{r.name}</td>
+                <td style={{ textAlign: "right" }}>{r.total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-      {/* Totals */}
-      <div className="d-flex justify-content-between">
-        <span>SUBTOTAL</span>
-        <span>{subtotal.toFixed(2)}</span>
-      </div>
-      <div className="d-flex justify-content-between">
-        <span>TAX (8%)</span>
-        <span>{tax.toFixed(2)}</span>
-      </div>
-      <div className="d-flex justify-content-between fw-bold">
-        <span>TOTAL</span>
-        <span>{balance.toFixed(2)}</span>
-      </div>
-      <hr />
+        <hr style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
 
-      {/* Footer */}
-      <p>Customer: {customerName || "N/A"}</p>
-      <p>Payment: {paymentMethod}</p>
-      <p className="text-center mt-3">Thank you for shopping!</p>
+        {/* Totals */}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Subtotal</span>
+          <span>{subtotal.toFixed(2)}</span>
+        </div>
+        {/* <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Tax (8%)</span>
+          <span>{tax.toFixed(2)}</span>
+        </div> */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: "bold",
+            borderTop: "1px dashed #000",
+            paddingTop: "2px",
+          }}
+        >
+          <span>Total</span>
+          <span>{total.toFixed(2)}</span>
+        </div>
 
-      {/* Print Button */}
-      <div className="text-center mt-2 no-print">
-        <Button variant="outline-secondary" size="sm" onClick={onPrint}>
-          🖨️ Print Receipt
-        </Button>
+        <hr style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+
+        {/* Customer & Payment */}
+        <p style={{ margin: "2px 0" }}>
+          Customer: {customerName || "N/A"}
+          <br />
+          Payment: {paymentMethod || "N/A"}
+        </p>
+
+        <hr style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+
+        {/* Footer */}
+        <div style={{ textAlign: "center", marginTop: "4px" }}>
+          <p style={{ margin: "2px 0", fontWeight: "bold" }}>Thank you for your business!</p>
+          <p style={{ margin: "2px 0", fontSize: "11px" }}>
+            Goods once sold are not returnable.
+          </p>
+        </div>
+
+        {/* Print Button (hidden on print) */}
+        <div className="text-center no-print mt-2">
+          <Button
+            variant="dark"
+            size="sm"
+            onClick={onPrint}
+            style={{ borderRadius: "20px" }}
+          >
+            🖨️ Print Receipt
+          </Button>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 export default Receipt;
